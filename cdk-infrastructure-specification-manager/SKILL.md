@@ -217,3 +217,79 @@ Before returning `InfraSpec`, verify:
 8. Repository conventions are followed.
 9. Gaps and assumptions are clearly identified.
 10. No CDK code is generated.
+
+## Upstream Block Gate
+
+The analysis context arrives from the CDK Analysis Orchestrator and carries a `status`.
+
+Check it before doing anything else.
+
+- If `status` is `"BLOCKED"`, stop. Do not invoke any sub-agent and do not attempt to build
+  an `InfraSpec` from unvalidated analysis. Return exactly:
+
+```json
+{
+  "status": "BLOCKED",
+  "stage": "CDK Infrastructure Specification Agent",
+  "upstreamReason": "<the orchestrator's reason>",
+  "analysisValidation": {}
+}
+```
+
+  and write that same object to the output file.
+
+- Only when `status` is `"OK"` proceed.
+
+The context is compact: it carries `requirementsModelPath` and `repoProfilePath`, not the
+models themselves. Read both models yourself with read_file from those paths before
+starting work.
+
+## Scope Discipline
+
+`additionalInformation` from the Input Manifest is the authoritative scope filter for the
+run, and it reaches this stage through `RequirementsModel.scope`.
+
+- Cover only what `scope.inScope` contains. Record anything else as deferred or
+  out-of-scope; never silently include it because it shares a stack or feature.
+- If `scope.authoritativeScopeFilter` is empty, blank, or a generic non-restrictive
+  placeholder (for example "go as per the requirements"), there is NO restriction: cover
+  everything the RequirementsModel identifies as in scope rather than narrowing further.
+- Copy literal names, identifiers and ARN patterns from the source documents verbatim.
+  Never invent one; anything not given becomes a declared gap.
+- Report gaps as structured objects with `id`, `field`, `description`,
+  `requiresHumanInput` and `blocksCodeGeneration` — never as free-text strings.
+
+## Output Location
+
+Write the result as valid JSON (no markdown or prose wrapper) to `workflow_output/CDK-Infrastructure-Specification-Agent.json`.
+
+`workflow_output` lives at the workflow RUN ROOT: the directory that CONTAINS the cloned
+repository's `src/` folder. It must never be created inside `src/`. The working directory
+may already be `.../src`, so resolve it first rather than using a bare relative path:
+
+```text
+ROOT="$(pwd)"; case "$ROOT" in */src) ROOT="$(dirname "$ROOT")";; esac
+mkdir -p "$ROOT/workflow_output"
+```
+
+Write to `$ROOT/workflow_output/CDK-Infrastructure-Specification-Agent.json` and, if reporting the location back, report the
+full absolute path. Never emit an unsubstituted placeholder such as `<ROOT>`. When reading
+a file from this folder, try `workflow_output/<file>` and fall back to
+`../workflow_output/<file>`; ignore any stale copy under `src/workflow_output/`.
+
+Writing the file is a side effect. Your final answer text must literally BE the complete
+`InfraSpec` JSON object — never a summary, a narrative, or an acknowledgement such as
+"generated successfully".
+
+## JSON Output Contract
+
+- The answer must parse as valid JSON: balanced braces and brackets, no trailing keys
+  after the outer object has closed, no markdown fence around it.
+- Every ARN pattern, code expression, or string concatenation must be one properly escaped
+  JSON string — never bare unquoted code spliced into array or object syntax.
+- Never splice markdown tables, pipe-delimited rows, or nested backticks into a JSON string
+  without escaping them; describe such content in plain prose instead.
+- Never bake a literal `null` into a resource name or ARN where a real value or a declared
+  gap belongs.
+- On a retry after validation feedback, always return the complete corrected model, never
+  only the changed fields and never a confirmation message.

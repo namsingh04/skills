@@ -189,4 +189,78 @@ Return the following logical structure:
     "status": "ready",
     "missingInputs": []
   }
-}
+  }
+```
+
+`extractedText` must carry the artifact's real, fully decoded text — not a path, not a
+placeholder, and not a description of the content. A reference alone is not registration.
+
+`additionalInformation` must be preserved verbatim exactly as supplied, whatever it says.
+Never interpret, summarise, normalise, or substitute your own judgement for it, and never
+drop it when it is blank — downstream stages treat it as the authoritative scope filter
+and must see precisely what the user typed.
+
+When an artifact lives in Confluence rather than as an uploaded file, register it the same
+way, with `source` set to `confluence` and the page id recorded, using the fetched page
+body as `extractedText`.
+
+## Guardrails
+
+- Do not perform requirements analysis, repository discovery, or infrastructure design.
+- Do not interpret what the extracted text means. Extraction is required; interpretation
+  belongs to the requirements stage.
+- Do not treat a raw byte read of a PDF as extraction. PDFs are binary: decode them with a
+  real converter. If the result starts with `%PDF-`, contains `stream`, `endstream`, or
+  `FlateDecode`, or is largely non-printable, the extraction failed — mark the artifact
+  `unreadable` with a reason rather than passing binary through.
+- Do not invent, summarise, or fabricate content for an artifact that could not be read.
+- Do not mark an artifact missing merely because it arrived by a different route than
+  expected.
+- Report every missing or unreadable input explicitly.
+
+## Verification
+
+Before returning the `InputManifest`, verify:
+
+1. Every required artifact is registered with a status.
+2. Every available artifact carries real decoded `extractedText`.
+3. No `extractedText` contains binary or container markers.
+4. `additionalInformation` is present and byte-for-byte identical to the input.
+5. Git source and target branches are recorded.
+6. `validation.missingInputs` lists everything absent or unreadable.
+7. The whole answer parses as valid JSON with balanced braces and brackets.
+
+## Output Location
+
+Write the result as valid JSON (no markdown or prose wrapper) to `workflow_output/Input-Artifact-Registration.json`.
+
+`workflow_output` lives at the workflow RUN ROOT: the directory that CONTAINS the cloned
+repository's `src/` folder. It must never be created inside `src/`. The working directory
+may already be `.../src`, so resolve it first rather than using a bare relative path:
+
+```text
+ROOT="$(pwd)"; case "$ROOT" in */src) ROOT="$(dirname "$ROOT")";; esac
+mkdir -p "$ROOT/workflow_output"
+```
+
+Write to `$ROOT/workflow_output/Input-Artifact-Registration.json` and, if reporting the location back, report the
+full absolute path. Never emit an unsubstituted placeholder such as `<ROOT>`. When reading
+a file from this folder, try `workflow_output/<file>` and fall back to
+`../workflow_output/<file>`; ignore any stale copy under `src/workflow_output/`.
+
+Writing the file is a side effect. Your final answer text must literally BE the complete
+`InputManifest` JSON object — never a summary, a narrative, or an acknowledgement such as
+"generated successfully".
+
+## JSON Output Contract
+
+- The answer must parse as valid JSON: balanced braces and brackets, no trailing keys
+  after the outer object has closed, no markdown fence around it.
+- Every ARN pattern, code expression, or string concatenation must be one properly escaped
+  JSON string — never bare unquoted code spliced into array or object syntax.
+- Never splice markdown tables, pipe-delimited rows, or nested backticks into a JSON string
+  without escaping them; describe such content in plain prose instead.
+- Never bake a literal `null` into a resource name or ARN where a real value or a declared
+  gap belongs.
+- On a retry after validation feedback, always return the complete corrected model, never
+  only the changed fields and never a confirmation message.
