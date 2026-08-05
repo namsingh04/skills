@@ -9,12 +9,13 @@ updated: "2026-08-05"
 ## When to Use
 
 Use at any workflow gate where a human is asked to resolve gaps that the automated stages
-could not, and at the stage immediately after it that validates and merges what the human
-returned.
+could not, and at the stages either side of it.
 
-Two roles use this skill:
+Three roles use this skill:
 
 - the **producer** — the stage that writes the review file;
+- the **presenter** — the stage that renders the gaps for a person and decides whether a
+  person is needed at all;
 - the **resolver** — the stage that reads the reviewer's upload back, validates it, and
   merges it.
 
@@ -59,6 +60,55 @@ Rules for the producer:
   option, and the fact that leaving everything blank is allowed.
 - Write it as JSON only. No separate markdown copy — a second file drifts from the first
   and the reviewer edits the wrong one.
+
+---
+
+## The Presenter, and Deciding Whether to Ask at All
+
+A review gate is expensive: it holds a running pipeline open, and on some platforms a form
+that is cancelled, or a run that is paused while a form is open, is fatal and discards
+everything already computed. So the gate should only ever open when a person is genuinely
+needed.
+
+The presenter runs between the producer and the gate, and does two things.
+
+**It decides.** Count the gaps that actually need a person:
+
+- `requiresHumanInput: true`, **or**
+- `blocksCodeGeneration: true`.
+
+A gap that is merely an unknown deploy-time value does **not** need a person — it becomes a
+validated required configuration field downstream, which is a normal outcome. Do not inflate
+the count with those: a form shown for nothing wastes a reviewer's attention and puts an
+expensive run at risk for no benefit.
+
+Emit as top-level keys:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `humanReviewRequired` | boolean | true when that count is greater than zero |
+| `gapsRequiringHumanInput` | integer | that count |
+| `gapCount` | integer | all gaps, needing a person or not |
+
+`humanReviewRequired` must be a real JSON boolean — never the string `"true"`, never null.
+A conditional branch reads it directly to decide whether the gate opens.
+
+**Fail towards asking.** If the gaps cannot be read at all, set `humanReviewRequired` true
+and say why. Showing a form unnecessarily is recoverable — the reviewer submits it
+untouched. Skipping one silently sends unreviewed gaps into the next stage, and nobody finds
+out until the output is wrong.
+
+**It renders.** Emit `reviewText`: the whole gap list as plain readable prose, written for a
+person rather than a parser. Per gap, in one block: the id; the missing field in plain words;
+why it matters downstream; what a sensible resolution looks like; whether it blocks. Blocking
+gaps first. Open with a one-line count, and close with the review file's absolute path and
+instructions for how to answer.
+
+This matters beyond formatting: a reviewer often cannot reach the run's filesystem, so the
+rendered text may be the **only** way they can see what they are being asked about.
+
+The presenter never resolves a gap, never invents a resolution, and never changes a gap's
+blocking flag. It presents and counts; the human decides and the resolver merges.
 
 ---
 

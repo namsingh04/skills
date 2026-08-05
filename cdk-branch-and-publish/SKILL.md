@@ -35,14 +35,28 @@ The source branch is a baseline to read and to branch from; it is never written 
    return `BLOCKED`. Writing generated code onto the source branch is the single outcome
    this stage exists to prevent, and proceeding "carefully" is not an option.
 
-3. **Fetch remote state**, pruning deleted refs, so the existence check below is accurate.
+3. **Answer branch existence from the local refs — never from the network.** The repository
+   was cloned by the workflow, which held the credential; the agent's shell does not have
+   it, so `git fetch`, `git ls-remote` and `git pull` all fail with
+   `could not read Username for <host>` and exit 128. You do not need them: the clone
+   already brought down every remote-tracking ref.
 
-4. **If the target branch exists on the remote** — check it out and set it to track the
-   remote branch. Record `createdFromSource: false`. An existing target branch is committed
-   onto; earlier work on it is preserved.
+   ```text
+   git rev-parse --verify --quiet "refs/remotes/origin/<target>"
+   ```
 
-5. **If it does not exist** — create it from the source branch's remote ref. Record
+   Exit 0 means the branch exists; non-zero means it does not.
+
+4. **If the target branch exists** — check it out and set it to track that ref. Record
+   `createdFromSource: false`. An existing target branch is committed onto; earlier work on
+   it is preserved and must never be discarded.
+
+5. **If it does not exist** — create it from the source branch's remote-tracking ref. Record
    `createdFromSource: true` and the source commit it was cut from.
+
+   If the ref lookup itself errors for a reason other than the branch being absent, record a
+   warning naming the exact error, treat the branch as absent, and say so. Never report a
+   branch state you could not check.
 
 6. **Verify.** Read the current branch back and confirm it equals the target. Confirm the
    working tree is clean. If either fails, return `BLOCKED` with what you actually found —
