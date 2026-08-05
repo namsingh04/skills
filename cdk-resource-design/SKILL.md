@@ -193,7 +193,8 @@ run, and it reaches this stage through `RequirementsModel.scope`.
 - Cover only what `scope.inScope` contains. Record anything else as deferred or
   out-of-scope; never silently include it because it shares a stack or feature.
 - If `scope.authoritativeScopeFilter` is empty, blank, or a generic non-restrictive
-  placeholder (for example "go as per the requirements"), there is NO restriction: cover
+  placeholder — `NA`, an empty value, or wording that names no specific resource or
+  feature restriction — there is NO restriction: cover
   everything the RequirementsModel identifies as in scope rather than narrowing further.
 - Copy literal names, identifiers and ARN patterns from the source documents verbatim.
   Never invent one; anything not given becomes a declared gap.
@@ -234,3 +235,50 @@ Writing the file is a side effect. Your final answer text must literally BE the 
   gap belongs.
 - On a retry after validation feedback, always return the complete corrected model, never
   only the changed fields and never a confirmation message.
+
+## Status Contract
+
+This skill's model is emitted inside the shared workflow envelope defined by the
+`workflow-status-contract` skill. Alongside this model's own top-level keys — as siblings,
+never as a wrapper around them — every output carries `status`, `stage`, `runId`,
+`outputPath`, `upstreamStatus`, `nextAction`, `gaps` and `warnings`.
+
+Read the upstream `status` before doing anything else:
+
+- `OK` or `PARTIAL` — proceed. `PARTIAL` means work with the gaps you were given; it is
+  never a reason to stop.
+- `BLOCKED` or `SKIPPED` — do not fail and do not raise. Write your own output file with
+  `status: "SKIPPED"`, the `upstreamStatus` you saw, an empty payload and
+  `nextAction: "SKIP_DOWNSTREAM"`, then return.
+- Upstream missing or unreadable — **fail open**. Proceed as if it were `OK` and record a
+  warning. Inability to see an upstream result is never grounds to block.
+
+`BLOCKED` is reserved for this stage's own unrecoverable failure: its input is missing,
+empty or unparseable, or its own tool calls failed beyond retry. A gap count, a severity
+judgement, or a downstream readiness flag never produces `BLOCKED`.
+
+Every gap is an object carrying exactly `id`, `field`, `description`, `source`,
+`requiresHumanInput`, `blocksCodeGeneration`, `suggestedResolution` and `resolution`.
+`resolution` is an empty string when this stage creates the gap — only a human review gate
+fills it in.
+
+## Authority Chain
+
+Resolve every "where does this value come from?" question in this order:
+
+1. **The standards file** — the base. Conventions, policy, naming, structure, required
+   commands and required checks.
+2. **The Solution Design** — what is being built: resource names, keys, settings, flows,
+   and any environment or account values it states.
+3. **The RepoProfile** — the repository as it actually is.
+4. **A declared gap** — when no source states the value.
+
+Never invent a value. When two sources disagree, take the higher-ranked one **and** record
+a `warnings` entry naming both — never resolve a conflict silently. One exception: for
+mechanical facts required to compile — the symbol names, helper signatures, file paths and
+import specifiers that actually exist in the checkout — the RepoProfile wins, because the
+standards file describes policy and the compiler does not negotiate. Record the conflict
+either way.
+
+A value stated by any source is never a gap. Check the sources before writing one: listing
+the same value as both a requirement and a gap is a self-contradiction.

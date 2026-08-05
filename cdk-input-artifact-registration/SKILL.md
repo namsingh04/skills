@@ -8,7 +8,15 @@ updated: "2026-07-27"
 
 ## When to Use
 
-Use this skill at the beginning of a CDK infrastructure generation workflow after the UI/Input Node has collected the required inputs.
+Use this skill at the beginning of a CDK infrastructure generation workflow after the
+UI/Input Node has collected the required inputs.
+
+Extraction itself is delegated. Use `confluence-document-extraction` for a Confluence
+source document, `jira-issue-extraction` for issue-sourced acceptance criteria,
+`structured-table-extraction` for any table whose values downstream stages read field by
+field, and `mermaid-diagram-interpretation` for any diagram that carries architectural
+meaning. This skill governs what is registered and how it is verified, not how each source
+is read.
 
 Apply when the workflow receives:
 
@@ -35,7 +43,11 @@ The workflow expects the following inputs:
 
 2. **Acceptance Criteria**
    - Defines expected behavior and functional requirements.
-   - Register the original file reference.
+   - Sourced from one or more issue keys, supplied comma-separated and processed in the
+     order given. There is no file fallback and no alternative source: never derive
+     criteria from the Solution Design, read them off disk, or reuse a previous run's.
+   - A blank key list is a recorded gap, not a failure: register an empty extraction, name
+     the missing input in `warnings` and `gaps`, and continue.
    - Do not analyze or interpret the acceptance criteria.
 
 3. **standard.md**
@@ -189,7 +201,7 @@ Return the following logical structure:
     "status": "ready",
     "missingInputs": []
   }
-  }
+}
 ```
 
 `extractedText` must carry the artifact's real, fully decoded text — not a path, not a
@@ -197,8 +209,8 @@ placeholder, and not a description of the content. A reference alone is not regi
 
 `additionalInformation` must be preserved verbatim exactly as supplied, whatever it says.
 Never interpret, summarise, normalise, or substitute your own judgement for it, and never
-drop it when it is blank — downstream stages treat it as the authoritative scope filter
-and must see precisely what the user typed.
+drop it when it is blank or `NA` — the requirements stage decides what it means, and it
+must see precisely what the user typed. Registration never resolves that question.
 
 When an artifact lives in Confluence rather than as an uploaded file, register it the same
 way, with `source` set to `confluence` and the page id recorded, using the fetched page
@@ -264,3 +276,50 @@ Writing the file is a side effect. Your final answer text must literally BE the 
   gap belongs.
 - On a retry after validation feedback, always return the complete corrected model, never
   only the changed fields and never a confirmation message.
+
+## Status Contract
+
+This skill's model is emitted inside the shared workflow envelope defined by the
+`workflow-status-contract` skill. Alongside this model's own top-level keys — as siblings,
+never as a wrapper around them — every output carries `status`, `stage`, `runId`,
+`outputPath`, `upstreamStatus`, `nextAction`, `gaps` and `warnings`.
+
+Read the upstream `status` before doing anything else:
+
+- `OK` or `PARTIAL` — proceed. `PARTIAL` means work with the gaps you were given; it is
+  never a reason to stop.
+- `BLOCKED` or `SKIPPED` — do not fail and do not raise. Write your own output file with
+  `status: "SKIPPED"`, the `upstreamStatus` you saw, an empty payload and
+  `nextAction: "SKIP_DOWNSTREAM"`, then return.
+- Upstream missing or unreadable — **fail open**. Proceed as if it were `OK` and record a
+  warning. Inability to see an upstream result is never grounds to block.
+
+`BLOCKED` is reserved for this stage's own unrecoverable failure: its input is missing,
+empty or unparseable, or its own tool calls failed beyond retry. A gap count, a severity
+judgement, or a downstream readiness flag never produces `BLOCKED`.
+
+Every gap is an object carrying exactly `id`, `field`, `description`, `source`,
+`requiresHumanInput`, `blocksCodeGeneration`, `suggestedResolution` and `resolution`.
+`resolution` is an empty string when this stage creates the gap — only a human review gate
+fills it in.
+
+## Authority Chain
+
+Resolve every "where does this value come from?" question in this order:
+
+1. **The standards file** — the base. Conventions, policy, naming, structure, required
+   commands and required checks.
+2. **The Solution Design** — what is being built: resource names, keys, settings, flows,
+   and any environment or account values it states.
+3. **The RepoProfile** — the repository as it actually is.
+4. **A declared gap** — when no source states the value.
+
+Never invent a value. When two sources disagree, take the higher-ranked one **and** record
+a `warnings` entry naming both — never resolve a conflict silently. One exception: for
+mechanical facts required to compile — the symbol names, helper signatures, file paths and
+import specifiers that actually exist in the checkout — the RepoProfile wins, because the
+standards file describes policy and the compiler does not negotiate. Record the conflict
+either way.
+
+A value stated by any source is never a gap. Check the sources before writing one: listing
+the same value as both a requirement and a gap is a self-contradiction.

@@ -136,33 +136,66 @@ REQ-003
 
 ---
 
-### 4. Extract Infrastructure Requirements
+### 4. Extract Resource Requirements
 
-Identify the AWS capabilities the solution requires: messaging, routing, persistence,
-compute, storage, notification, security, observability.
+This is the most important section of the model. Every downstream stage — resource design,
+the infrastructure specification, and the generated code — reads physical resource names
+from here and from nowhere else. When it is missing, names surface downstream as unfilled
+configuration fields and the generated code is unusable.
 
-For each, capture purpose, the behaviour it supports, and the requirement IDs it serves.
+Produce **one entry per row** of every table in the Solution Design that lists stacks or
+resources — whatever those tables are titled — plus any resource named elsewhere in the
+document. Use the `structured-table-extraction` skill's row objects rather than re-reading
+the table as prose.
+
+Each entry carries:
+
+- `resourceType` — the CloudFormation type where the source states or implies one;
+- `stackName` — that row's stack cell, copied character for character;
+- `namePattern` — that row's resource name, copied character for character;
+- `requirements` — the requirement ids this resource satisfies;
+- `notes` — one string per value in that row's configuration cell, losing nothing.
+
+Include **every** row, including rows whose resource type falls outside the current run's
+scope. Scope filtering happens downstream; the job here is to lose nothing, because a name
+dropped here cannot be recovered by any later stage.
+
+Names are verbatim: never abbreviate, expand, re-case, or apply a naming convention of your
+own. Templated placeholder tokens are reproduced byte for byte — never resolved, never
+substituted for an environment, never allowed to become the string `null`, and never a
+reason to drop a row. Any name beginning `null-` is a bug.
+
+Also capture the AWS capabilities the solution requires — messaging, routing, persistence,
+compute, storage, notification, security, observability — with the purpose each serves and
+the requirement ids it supports.
 
 ---
 
-### 5. Apply the Authoritative Scope Filter
+### 5. Compute the Scope Directive
 
-`additionalInformation` from the Input Manifest is the ONLY basis for what is in scope
-for this run.
+`additionalInformation` from the Input Manifest is an **instruction** supplied by the
+requester. It has two possible readings, and you decide which applies once, here, so every
+downstream stage inherits the same answer.
 
-- Copy it verbatim into `scope.authoritativeScopeFilter`. Never null, never paraphrased.
-- Map it to concrete AWS resource types and include only those types' requirements.
-- A resource type belonging to the same Solution Design stack or feature does NOT make it
-  in scope. If `additionalInformation` did not name it, it belongs in `scope.deferredScope`
-  with a one-line reason, even when the Solution Design bundles it into the same stack.
-- Never merge, drop, or silently reclassify a deferred item.
+Copy the raw value verbatim into `scope.authoritativeScopeFilter` either way. Never null,
+never paraphrased.
 
-If `additionalInformation` is empty, blank, or a generic non-restrictive placeholder
-(for example "go as per the requirements", or similar wording naming no specific resource
-or feature restriction), there is NO scope restriction for this run: everything the
-Solution Design and Acceptance Criteria describe is in scope. Record the literal value
-provided in `scope.authoritativeScopeFilter`, populate `scope.inScope` with everything
-described, and leave `scope.deferredScope` empty.
+**Non-restrictive.** The value is `NA`, empty, blank, or wording that names no specific
+resource, feature or restriction. Then it carries no instruction and imposes no
+restriction: it is not considered further. Everything the Solution Design and Acceptance
+Criteria describe is in scope. Populate `scope.inScope` with all of it, leave
+`scope.deferredScope` empty, and leave `scope.mandatoryInstructions` empty.
+
+**An instruction.** The value says something specific. Then it is authoritative and what it
+asks for is **mandatorily in scope** — record each distinct ask as an entry in
+`scope.mandatoryInstructions`, verbatim. Where it also names resource types, it narrows
+scope as well: map those to concrete AWS resource types, include only those types'
+requirements in `scope.inScope`, and put everything else the Solution Design describes into
+`scope.deferredScope` with a one-line reason.
+
+Belonging to the same Solution Design stack or feature does NOT put a resource type in
+scope when the instruction restricts scope. Never merge, drop, or silently reclassify a
+deferred item.
 
 ---
 
@@ -204,6 +237,7 @@ not place `inScope` or `deferredScope` at the document root:
   "modelType": "RequirementsModel",
   "scope": {
     "authoritativeScopeFilter": "<additionalInformation copied verbatim>",
+    "mandatoryInstructions": ["<each distinct ask, verbatim; empty when non-restrictive>"],
     "inScope": ["<resource type or capability>"],
     "deferredScope": [{ "item": "<name>", "reason": "<one line>" }]
   },
@@ -220,11 +254,21 @@ not place `inScope` or `deferredScope` at the document root:
       "acceptanceCriteriaRefs": ["AC01"]
     }
   ],
+  "resourceRequirements": [
+    {
+      "resourceType": "<CloudFormation type>",
+      "stackName": "<verbatim stack cell>",
+      "namePattern": "<verbatim resource name>",
+      "requirements": ["REQ-001"],
+      "notes": ["<every value from the configuration cell, one per string>"],
+      "sourceRefs": ["<table caption or heading>"]
+    }
+  ],
   "infrastructureRequirements": [
     {
       "id": "INF-001",
       "resourceType": "<AWS service>",
-      "literalName": "<verbatim name from the Solution Design, or null>",
+      "literalName": "<verbatim name from the Solution Design, or an empty string>",
       "configuration": { },
       "sourceRefs": ["<document section>"]
     }
@@ -268,6 +312,10 @@ Before returning `RequirementsModel`, verify:
 3. `inScope` is inside `scope`, not at the document root.
 4. `deferredScope` is inside `scope`, not at the document root.
 5. `authoritativeScopeFilter` matches `additionalInformation` verbatim.
+5a. `resourceRequirements` is present and has one entry per row of every stack/resource
+    table in the Solution Design, including rows outside the current scope.
+5b. Every `stackName` and `namePattern` matches its source cell character for character,
+    every templated placeholder token is intact, and no value is `null` or begins `null-`.
 6. Every requirement has a unique `REQ-###` id and at least one source reference.
 7. Every acceptance criterion is mapped or explicitly recorded as uncovered.
 8. Every literal name is copied verbatim from a source document.
@@ -311,3 +359,50 @@ Writing the file is a side effect. Your final answer text must literally BE the 
   gap belongs.
 - On a retry after validation feedback, always return the complete corrected model, never
   only the changed fields and never a confirmation message.
+
+## Status Contract
+
+This skill's model is emitted inside the shared workflow envelope defined by the
+`workflow-status-contract` skill. Alongside this model's own top-level keys — as siblings,
+never as a wrapper around them — every output carries `status`, `stage`, `runId`,
+`outputPath`, `upstreamStatus`, `nextAction`, `gaps` and `warnings`.
+
+Read the upstream `status` before doing anything else:
+
+- `OK` or `PARTIAL` — proceed. `PARTIAL` means work with the gaps you were given; it is
+  never a reason to stop.
+- `BLOCKED` or `SKIPPED` — do not fail and do not raise. Write your own output file with
+  `status: "SKIPPED"`, the `upstreamStatus` you saw, an empty payload and
+  `nextAction: "SKIP_DOWNSTREAM"`, then return.
+- Upstream missing or unreadable — **fail open**. Proceed as if it were `OK` and record a
+  warning. Inability to see an upstream result is never grounds to block.
+
+`BLOCKED` is reserved for this stage's own unrecoverable failure: its input is missing,
+empty or unparseable, or its own tool calls failed beyond retry. A gap count, a severity
+judgement, or a downstream readiness flag never produces `BLOCKED`.
+
+Every gap is an object carrying exactly `id`, `field`, `description`, `source`,
+`requiresHumanInput`, `blocksCodeGeneration`, `suggestedResolution` and `resolution`.
+`resolution` is an empty string when this stage creates the gap — only a human review gate
+fills it in.
+
+## Authority Chain
+
+Resolve every "where does this value come from?" question in this order:
+
+1. **The standards file** — the base. Conventions, policy, naming, structure, required
+   commands and required checks.
+2. **The Solution Design** — what is being built: resource names, keys, settings, flows,
+   and any environment or account values it states.
+3. **The RepoProfile** — the repository as it actually is.
+4. **A declared gap** — when no source states the value.
+
+Never invent a value. When two sources disagree, take the higher-ranked one **and** record
+a `warnings` entry naming both — never resolve a conflict silently. One exception: for
+mechanical facts required to compile — the symbol names, helper signatures, file paths and
+import specifiers that actually exist in the checkout — the RepoProfile wins, because the
+standards file describes policy and the compiler does not negotiate. Record the conflict
+either way.
+
+A value stated by any source is never a gap. Check the sources before writing one: listing
+the same value as both a requirement and a gap is a self-contradiction.

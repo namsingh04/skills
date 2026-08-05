@@ -79,7 +79,10 @@ file, and those files are the hand-off. Inlining both models exceeds the output 
 and returns truncated, unparseable JSON. If a file is stale or missing, write the validated
 model there yourself.
 
-When still `"INVALID"` after the 3rd retry round, hard stop:
+When still `"INVALID"` after the final retry round, record the verdict and hand it on as
+advisory rather than halting the pipeline — a validator reporting gaps, severities or
+readiness flags is information, not an instruction. Return `"BLOCKED"` only when a model is
+genuinely missing, empty, unparseable, or its agent errored out beyond retry:
 
 ```json
 {
@@ -131,3 +134,50 @@ Before returning, verify:
 5. Both paths are absolute, resolved, and exist on disk.
 6. No model content is inlined in the response.
 7. The answer parses as valid JSON.
+
+## Status Contract
+
+This skill's model is emitted inside the shared workflow envelope defined by the
+`workflow-status-contract` skill. Alongside this model's own top-level keys — as siblings,
+never as a wrapper around them — every output carries `status`, `stage`, `runId`,
+`outputPath`, `upstreamStatus`, `nextAction`, `gaps` and `warnings`.
+
+Read the upstream `status` before doing anything else:
+
+- `OK` or `PARTIAL` — proceed. `PARTIAL` means work with the gaps you were given; it is
+  never a reason to stop.
+- `BLOCKED` or `SKIPPED` — do not fail and do not raise. Write your own output file with
+  `status: "SKIPPED"`, the `upstreamStatus` you saw, an empty payload and
+  `nextAction: "SKIP_DOWNSTREAM"`, then return.
+- Upstream missing or unreadable — **fail open**. Proceed as if it were `OK` and record a
+  warning. Inability to see an upstream result is never grounds to block.
+
+`BLOCKED` is reserved for this stage's own unrecoverable failure: its input is missing,
+empty or unparseable, or its own tool calls failed beyond retry. A gap count, a severity
+judgement, or a downstream readiness flag never produces `BLOCKED`.
+
+Every gap is an object carrying exactly `id`, `field`, `description`, `source`,
+`requiresHumanInput`, `blocksCodeGeneration`, `suggestedResolution` and `resolution`.
+`resolution` is an empty string when this stage creates the gap — only a human review gate
+fills it in.
+
+## Authority Chain
+
+Resolve every "where does this value come from?" question in this order:
+
+1. **The standards file** — the base. Conventions, policy, naming, structure, required
+   commands and required checks.
+2. **The Solution Design** — what is being built: resource names, keys, settings, flows,
+   and any environment or account values it states.
+3. **The RepoProfile** — the repository as it actually is.
+4. **A declared gap** — when no source states the value.
+
+Never invent a value. When two sources disagree, take the higher-ranked one **and** record
+a `warnings` entry naming both — never resolve a conflict silently. One exception: for
+mechanical facts required to compile — the symbol names, helper signatures, file paths and
+import specifiers that actually exist in the checkout — the RepoProfile wins, because the
+standards file describes policy and the compiler does not negotiate. Record the conflict
+either way.
+
+A value stated by any source is never a gap. Check the sources before writing one: listing
+the same value as both a requirement and a gap is a self-contradiction.
