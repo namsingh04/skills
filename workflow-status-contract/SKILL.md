@@ -30,10 +30,10 @@ keys at the top level.
 | Key | Type | Meaning |
 |---|---|---|
 | `status` | string | `OK`, `PARTIAL`, `SKIPPED`, or `BLOCKED` |
-| `stage` | string | This node's label, exactly as the workflow names it |
-| `runId` | string | The run identifier, copied forward from upstream unchanged |
-| `outputPath` | string | The absolute path this file was written to |
-| `upstreamStatus` | string | The `status` this node read from its upstream input |
+| `stage` | string | This node's label, exactly as the workflow names it — never a skill name or a section heading from a skill |
+| `runId` | string | The final path segment of the resolved RUN ROOT, which is already a unique per-run identifier. Read it; never generate one |
+| `outputPath` | string | The absolute path this file was written to, read back from the real write |
+| `upstreamStatus` | string | The `status` of the input actually read. `"N/A"` when the upstream is a form or a git operation and carries no envelope |
 | `nextAction` | string | `PROCEED`, `PROCEED_WITH_GAPS`, `HUMAN_INPUT_REQUIRED`, or `SKIP_DOWNSTREAM` |
 | `gaps` | array | Gap objects, schema below |
 | `warnings` | array | `{ "code": "<slug>", "message": "<one line>", "sources": ["<source>"] }` |
@@ -62,9 +62,38 @@ wrong:
 - a severity judgement from a validator;
 - a readiness flag from a downstream contract;
 - an unresolved question or an unspecified value;
-- a human reviewer choosing not to resolve something.
+- a human reviewer choosing not to resolve something;
+- a tool or binary being unavailable in the environment.
 
 Unspecified values are the expected output of analysis, not a failure of it.
+
+---
+
+## Never Report What You Did Not Run
+
+Every field in the envelope is a claim, and a downstream stage cannot tell a measured value
+from an invented one. So:
+
+- If a tool call fails, report the **actual error text** and which tool produced it.
+- Do not infer a cause for a failure, and never generalise one failed call into a claim
+  about the environment. A delegation tool failing tells you nothing about whether git,
+  python or the filesystem work. If you have not tried them, you do not know.
+- Never write a status, path, SHA, branch, count or identifier you did not read from real
+  output. An invented absolute path in `outputPath`, or an invented `runId`, is worse than
+  an empty field, because everything downstream trusts it.
+- If you genuinely could not run something, say exactly that: name the command, quote the
+  error, and leave the field you could not determine as an empty string rather than a
+  plausible-looking value.
+
+This is not hypothetical. A node once called a delegation tool with an invented agent name,
+got "not found", never invoked a shell at all, and then reported `BLOCKED` with the reason
+*"agent environment could not run git commands"* — plus a fabricated output path and a
+fabricated run id. Every part of that conclusion was invented to explain an unrelated
+failure, and it would have sent a human debugging the wrong thing entirely.
+
+**Tooling availability is a warning, not a blocker.** A missing binary or an unavailable
+tool is recorded in `warnings`, and any gap raised for it carries
+`blocksCodeGeneration: false` — it says nothing about whether code can be emitted.
 
 ---
 
@@ -182,8 +211,11 @@ Before returning, verify:
 3. `status` is one of the four permitted values.
 4. `upstreamStatus` reflects what was actually read, or is recorded as unavailable with a
    matching warning.
-5. `outputPath` is an absolute path that exists on disk, and it does not contain a
-   placeholder such as `<ROOT>`.
+5. `outputPath` is an absolute path that exists on disk, read back from the write you
+   actually performed. It does not contain a placeholder such as `<ROOT>`, and it is not a
+   path you assumed the environment uses.
+5a. `stage` is this node's label, and `runId` is the final segment of the resolved RUN ROOT.
+   Neither was invented.
 6. Every gap is an object carrying exactly the eight gap keys, with `resolution` empty.
 7. Every `blocksCodeGeneration: true` gap names a specific artifact that could not be
    emitted at all.
