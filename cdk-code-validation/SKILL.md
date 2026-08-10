@@ -100,6 +100,28 @@ Independently of the build, check the emitted code against what was specified:
 
 ---
 
+## Bounding Every Command
+
+Wrap every install, build, test and synth command in a timeout, and record the wrapper as part
+of the command. A command that exceeds its budget is a **finding** — report the command and the
+limit — never a hang.
+
+**Never invoke a bare test script.** A package manager's `test` script with no flags frequently
+does not exit: Jest keeps the process alive when tests leave open handles, which CDK and AWS
+SDK tests routinely do. A run stalled for over half an hour that way, on a suite that had
+already finished. Use flags that force a non-interactive, self-exiting run — for Jest,
+`--ci --runInBand --forceExit`, and the equivalent for whatever runner the repository declares.
+
+**Do not pipe a long command through `tail`.** It suppresses all output until the command
+exits, so a hang and a slow run look identical and there is nothing to report. Redirect to a
+file and read the tail of the file afterwards.
+
+`resolvedLadder` must record the **exact command strings that were run**, timeout wrapper and
+flags included. The repair stage re-runs them verbatim, so anything paraphrased there becomes a
+command nobody has tested.
+
+---
+
 ## Findings
 
 Every problem is one finding:

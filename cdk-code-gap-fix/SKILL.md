@@ -33,6 +33,21 @@ the truth and now nothing does. If a finding cannot be fixed without weakening s
 
 ---
 
+## Re-run the Validator's Ladder, Verbatim
+
+The validation report carries `resolvedLadder`: the exact command strings that stage already
+ran successfully in this repository. Run **those**, character for character. Do not compose a
+build, test or synth command of your own.
+
+A run was lost to precisely this. The validator ran `jest --runInBand`, which completed; the
+repair stage then invented a bare `npm test`, which maps to plain `jest`, which never exits
+because CDK tests leave open handles. Nothing bounded it and the run stalled indefinitely.
+
+If a command in the ladder lacks a timeout wrapper, add one — never remove one. A command that
+exceeds its budget is a finding, never a hang.
+
+---
+
 ## Triage
 
 Classify every finding before editing anything, and fix in this order — earlier classes

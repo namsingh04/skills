@@ -23,8 +23,17 @@ Three roles use this skill:
 
 ## The Review File
 
-The producer writes a single JSON file containing every gap the reviewer may act on, with
-the `resolution` field already present and empty, ready to be filled in.
+**There is exactly one review file per stage, and the presenter writes it.** It is the file
+that gets published, downloaded, edited, uploaded and validated — the same bytes at every
+step.
+
+This matters more than it sounds. A pipeline that writes two gap files — one for a human and
+one for the resolver — will hand the reviewer a file the resolver does not recognise, and the
+resolutions vanish. If you find yourself writing a second gap file "for the resolver", that is
+the bug.
+
+The file contains every gap the reviewer may act on, with the `resolution` field already
+present and empty, ready to be filled in.
 
 ```json
 {
@@ -134,12 +143,21 @@ The resolver runs these checks **before** anything downstream consumes the file.
 of them is a warning-and-continue, not a hard failure — see Degradation below.
 
 1. **It parses.** Valid JSON, balanced braces and brackets.
-2. **It is the same file.** `runId` and `reviewFor` match what the producer wrote. A file
-   from a different run is rejected wholesale and the original gaps carry forward.
-3. **No gap was dropped.** Every `id` the producer wrote is present in the upload.
-4. **No gap was invented.** Every `id` in the upload was written by the producer. An
-   unknown id is discarded with a warning; a reviewer cannot introduce new requirements
-   through this channel.
+2. **`runId` is the only fatal identity check.** If it matches, the file came from this run
+   and its resolutions are real work by a real person — apply them.
+
+   A mismatched or **absent** `reviewFor` is a **warning, not a rejection**. That distinction
+   is the entire point of this rule: one pipeline published a review file carrying no
+   `reviewFor` while its resolver compared against a *different* file that had one, and six
+   genuine resolutions were discarded as a mismatch. Never throw away a person's work over a
+   label.
+3. **Never reject an upload wholesale.** The gap `id` is the join. Walk the uploaded gaps one
+   at a time: a recognised id carrying a non-empty resolution is applied; only a genuinely
+   unknown id is skipped, reported on its own and never as grounds to drop the rest.
+4. **No gap was dropped.** Every `id` the producer wrote is accounted for. A missing one
+   carries forward unresolved — that is not an error.
+5. **No gap was invented.** An unknown id is skipped with a warning naming it; a reviewer
+   cannot introduce new requirements through this channel.
 5. **Nothing but `resolution` changed.** Compare `field`, `description`, `source`,
    `requiresHumanInput` and `blocksCodeGeneration` against the producer's file. A changed
    field is reverted to the producer's value and recorded as a warning — the review channel
@@ -187,6 +205,11 @@ The gate must never stall the workflow and must never fail it.
 - **Some gaps resolved, some not** → apply what was resolved, carry the rest, status
   `PARTIAL` when any blocking gap remains unresolved, `OK` otherwise.
 - **All blocking gaps resolved** → status `OK`.
+- **An upload arrived and nothing was applied** → this is almost certainly a defect in the
+  pipeline rather than a choice the reviewer made: somebody filled in a file and it was
+  silently dropped. Say so in the **first line** of the result, set `PARTIAL`, and name which
+  check rejected each gap. Never report it as an ordinary deferral — a run lost six real
+  resolutions that way and nothing flagged it.
 
 An unresolved gap is a normal outcome. It travels forward as a declared gap and, where it
 represents a value that is simply unknown, it becomes a required configuration field
