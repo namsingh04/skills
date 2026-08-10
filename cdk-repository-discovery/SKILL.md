@@ -330,6 +330,19 @@ Your final answer text must literally BE the `RepoProfile` JSON object, never a 
 acknowledgement such as "RepoProfile generated successfully." Writing it to an output
 file is a side effect; it never replaces returning the full profile as your answer.
 
+This is the most common way this stage fails, and it fails silently — the manager receives
+something that reads like success, has no model to validate, and blocks the pipeline. Two
+real answers that were **not** acceptable:
+
+- *"The CDK repository structure, stacks, constructs, dependencies, patterns, and extension
+  points have been successfully analyzed, and the RepoProfile JSON has been written."*
+- *"Status: success. outputPath: …/workflow_output/RepoProfile.json"*
+
+The first is prose. The second is a pointer — permitted **only** when the profile is genuinely
+too large to return, and only after listing the file and seeing it exists and is non-empty. In
+that run the pointer named a path where no file was present, because the agent had resolved
+the run folder differently from its manager. Verify the write, and prefer returning the model.
+
 ## Verification
 
 Before returning `RepoProfile`, verify:

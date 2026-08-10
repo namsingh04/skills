@@ -69,6 +69,47 @@ Unspecified values are the expected output of analysis, not a failure of it.
 
 ---
 
+## The Run Folder
+
+Everything in a run lives under one folder, `<root>`:
+
+```
+<root>/workflow_output/   every agent's output, and every input an earlier agent produced
+<root>/src/               the working checkout — only generated code belongs here
+```
+
+**`<root>` is inherited, never re-derived.** Take it from the `outputPath` in your upstream
+input: strip the filename and the trailing `/workflow_output`, and what remains is `<root>`.
+The first agent in the workflow resolves it from a known starting point; every agent after it
+copies that answer.
+
+Do **not** work it out from `pwd`. That recipe only gives the right answer when the agent
+happens to start in `<root>` or `<root>/src`, and when it does not, the result still *looks*
+plausible — an absolute path one directory off, which nothing notices.
+
+This is not hypothetical. Two agents in one run each resolved the folder for themselves and
+landed one level apart. One wrote its model where the other was not looking; the manager found
+the file missing and blocked the run. Every stage afterwards correctly wrote a `SKIPPED`
+envelope, so the run cost real money, produced nothing, and reported success at every node.
+
+Only when there is no readable upstream `outputPath` may you resolve it yourself, and then you
+must record a warning so the discrepancy is visible.
+
+## Prove the File Exists Before Reporting It
+
+After writing your output, list it — `ls -l <the exact path>` — and confirm it is there and
+non-empty. Only then put that path in `outputPath`.
+
+If the listing fails or the file is empty, the write did not happen: report the real error,
+leave `outputPath` empty, and say plainly that the write failed. Never report a path you have
+not just seen listed.
+
+An agent once told its manager its report was at a path where no file existed. The manager
+looked, found nothing, and blocked the run — a failure that presented as a missing model
+rather than as the bad path it actually was.
+
+---
+
 ## Never Report What You Did Not Run
 
 Every field in the envelope is a claim, and a downstream stage cannot tell a measured value
