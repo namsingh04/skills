@@ -95,6 +95,33 @@ envelope, so the run cost real money, produced nothing, and reported success at 
 Only when there is no readable upstream `outputPath` may you resolve it yourself, and then you
 must record a warning so the discrepancy is visible.
 
+## The Answer Is an Envelope, the Document Is a File
+
+A stage's answer carries the envelope, a **path**, and a short summary — counts, key names,
+status fields. It does not carry the document.
+
+Anything beyond a few KB lives in `<root>/workflow_output/` and downstream stages read it from
+there. They have a file-reading tool and they know the run folder; their prompts tell them the
+path is in the envelope.
+
+This is the single most important structural rule here, because a large document breaks *every*
+channel it is pushed through, and each break looks like a different bug:
+
+| Channel | How it fails |
+|---|---|
+| the final answer | *"LLM is unable to align with user provided output format… fails after specified retries"* |
+| a tool argument | one missed escape invalidates the whole call; the agent retries identically and never converges |
+| a downstream prompt | *"Model context Limit has been reached"* in the stage that receives it |
+
+All three were observed on the same ~60 KB payload. In the first case the agent had done
+everything correctly — serialised with a real JSON library, verified the file, finalised it —
+and still lost the run at its first node, burning 7 million tokens, because the last step asked
+it to return the document rather than a receipt for it.
+
+Carry cheap identifying facts in the envelope so the next stage can sanity-check without
+opening the file: character counts, the distinct names recorded, the scope object. Those cost
+nothing and save a read.
+
 ## Cap What a Command Can Return, in Bytes
 
 Tool output lands in your context. A single oversized result ends the turn with a context-limit
