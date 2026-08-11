@@ -3,7 +3,7 @@ name: "cdk-input-artifact-registration"
 description: "Guidelines for validating, classifying, and registering workflow input artifacts and Git context for reusable CDK infrastructure generation workflows. Produces a compact, traceable Input Manifest without performing requirements analysis, repository analysis, infrastructure design, or code generation."
 version: 1
 created: "2026-07-27"
-updated: "2026-07-27"
+updated: "2026-08-11"
 ---
 
 ## When to Use
@@ -24,7 +24,6 @@ Apply when the workflow receives:
 - Jira template or Acceptance Criteria
 - standard.md
 - Source Git branch
-- Target Git branch
 
 The existing CDK repository is provided through the Project Node and should not be treated as a user-uploaded artifact.
 
@@ -59,9 +58,12 @@ The workflow expects the following inputs:
    - Git branch representing the existing implementation baseline.
    - Preserve the branch name exactly as provided.
 
-5. **Target Branch**
-   - Git branch where generated changes are intended to be applied.
-   - Preserve the branch name exactly as provided.
+**There is no target branch input.** The working branch is cut from the source branch by a
+platform git node at run time, which names it and prompts the operator. No stage is told that
+name in advance and none needs it: every code-writing stage reads `HEAD` and asserts only that
+it is not the source branch. Do not require a target branch, do not derive one, and **do not
+raise a gap for its absence** — a gap flagged `requiresHumanInput` here opens a review form and
+asks a person about an input that was deliberately removed.
 
 ---
 
@@ -77,7 +79,6 @@ Required:
 - Acceptance Criteria
 - standard.md
 - Source Branch
-- Target Branch
 
 If any required input is missing, mark the workflow as `blocked` and identify the missing input.
 
@@ -114,12 +115,8 @@ The manifest should reference artifacts rather than embedding their contents.
 
 ### 4. Register Git Context
 
-Record:
-
-- Source branch
-- Target branch
-
-Preserve branch names exactly as provided.
+Record the source branch only, exactly as provided. There is no second branch to record: the
+working branch does not exist yet when this stage runs.
 
 Do not infer:
 
@@ -159,7 +156,6 @@ The manifest must contain:
 
 - Registered artifacts
 - Git source branch
-- Git target branch
 - Validation status
 - Missing inputs, if any
 
@@ -194,8 +190,7 @@ Return the following logical structure:
     }
   ],
   "git": {
-    "sourceBranch": "<source-branch>",
-    "targetBranch": "<target-branch>"
+    "sourceBranch": "<source-branch>"
   },
   "validation": {
     "status": "ready",
@@ -232,15 +227,40 @@ body as `extractedText`.
 
 ## Verification
 
-Before returning the `InputManifest`, verify:
+Run these against the manifest **re-read from disk**, not against what you believe you wrote.
+Every one is mechanical: it either passes or names the artifact that failed it. Downstream
+stages design real infrastructure from this text — a silently truncated Solution Design does
+not fail here, it loses a resource four stages later.
 
-1. Every required artifact is registered with a status.
-2. Every available artifact carries real decoded `extractedText`.
-3. No `extractedText` contains binary or container markers.
-4. `additionalInformation` is present and byte-for-byte identical to the input.
-5. Git source and target branches are recorded.
-6. `validation.missingInputs` lists everything absent or unreadable.
-7. The whole answer parses as valid JSON with balanced braces and brackets.
+1. **The file exists and parses.** `ls -l` shows non-empty; re-reading it yields valid JSON
+   with balanced braces and brackets. `outputPath` is that same absolute path.
+2. **It is in the run folder.** The path contains `/workflow_output/` and does not contain
+   `/src/`.
+3. **Every required artifact is registered** — `solutionDesign`, `acceptanceCriteria`,
+   `standard` — each with a `type`, a `reference` and a `status`.
+4. **Every `available` artifact carries real decoded text.** `extractedText` is the content
+   itself, not a path, a placeholder, a summary, or a description of the content.
+5. **Nothing was truncated.** For a file source, the registered character count equals the
+   source's. For a Confluence source, the page's last heading and its trailing text are both
+   present. No `...`, `[truncated]`, `content continues`, or similar marker appears at the end
+   of any artifact.
+6. **The text is clean.** No `%PDF-`, `stream`, `endstream`, `FlateDecode` or other container
+   marker; no unrendered storage-format or HTML tags; no literal two-character `\n` or `\xa0`
+   surviving as text where a real newline or space belongs.
+7. **Every Jira key supplied appears exactly once, in the order given**, each with its key,
+   summary and criteria text. No key was invented, dropped, merged, or reordered.
+8. **Structured content survived as structure.** Every table a downstream stage reads field by
+   field is registered row by row, not flattened into prose; every diagram that carries
+   architectural meaning has an interpretation attached. Record both counts.
+9. **`additionalInformation` is byte-for-byte identical to the input**, including when it is
+   blank or `NA`.
+10. **Git context is right.** `git.sourceBranch` holds the supplied name verbatim. There is no
+    `targetBranch` key and no gap about one.
+11. **Gaps and missing inputs agree.** `validation.missingInputs` names everything absent or
+    unreadable and nothing else; each entry has a matching `gaps` record; nothing appears both
+    registered as `available` and declared a gap.
+12. **The answer is the envelope, not the document.** It carries `manifestPath` and per-artifact
+    counts. No `extractedText` is in the answer text itself.
 
 ## Output Location
 
@@ -260,9 +280,14 @@ full absolute path. Never emit an unsubstituted placeholder such as `<ROOT>`. Wh
 a file from this folder, try `workflow_output/<file>` and fall back to
 `../workflow_output/<file>`; ignore any stale copy under `src/workflow_output/`.
 
-Writing the file is a side effect. Your final answer text must literally BE the complete
-`InputManifest` JSON object — never a summary, a narrative, or an acknowledgement such as
-"generated successfully".
+**The manifest is the file; the answer is the receipt.** A registered manifest runs to tens of
+kilobytes because it carries every artifact's full text, and returning that as the answer fails
+the platform's output-format check outright — one run died at its first node that way after
+building a perfectly valid file. So write the manifest to disk, and make the answer a JSON
+envelope carrying `manifestPath`, the artifact list as `{name, type, status, charCount, path}`,
+`git`, `validation`, `gaps` and `warnings` — never `extractedText`. Downstream stages
+`read_file` the manifest. The answer is still JSON only: never a narrative and never an
+acknowledgement such as "generated successfully".
 
 ## JSON Output Contract
 
