@@ -95,6 +95,31 @@ envelope, so the run cost real money, produced nothing, and reported success at 
 Only when there is no readable upstream `outputPath` may you resolve it yourself, and then you
 must record a warning so the discrepancy is visible.
 
+## Cap What a Command Can Return, in Bytes
+
+Tool output lands in your context. A single oversized result ends the turn with a context-limit
+error, and there is no partial recovery — the work done up to that point is lost with it.
+
+So every command that could return more than a screenful is **byte-capped**:
+
+```sh
+<command> 2>&1 | head -c 20000
+```
+
+**Do not cap by lines.** `head -n 200` and `sed -n '1,200p'` bound the number of lines, not the
+amount of text, and a single line of a minified `.json` or bundled `.js` file can be megabytes
+on its own. This is not a hypothetical distinction: a validation stage capped a recursive grep
+at 220 lines, took **3.19 MB** back into its context, and died. Its retry did the same thing and
+died the same way.
+
+**Never search or list recursively from above your working directory.** A run root contains the
+entire repository checkout, the installed skills, and every artifact the run has produced;
+`grep -R` across it is what produced the 3.19 MB above. Root every search at the specific
+directory you mean.
+
+Best of all, do not search. If you were handed a path, open that path. Searching for a file you
+already have the location of is how this failure starts.
+
 ## Never Hand-Escape a Large Document Into a Tool Argument
 
 If your output is more than a few KB of JSON, do not pass it as the `content` argument of a
