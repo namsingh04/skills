@@ -95,6 +95,32 @@ envelope, so the run cost real money, produced nothing, and reported success at 
 Only when there is no readable upstream `outputPath` may you resolve it yourself, and then you
 must record a warning so the discrepancy is visible.
 
+## Never Hand-Escape a Large Document Into a Tool Argument
+
+If your output is more than a few KB of JSON, do not pass it as the `content` argument of a
+file-writing tool. Doing so means every quote inside the document must be escaped by hand, and
+**one missed escape invalidates the entire tool call** — not just the document. The platform
+rejects the call with *"Invalid input format. Expected an object with properties 'path' and
+'content'"*, the arguments arrive as `null`, and there is nothing to correct because the
+failure is in the envelope rather than in the content.
+
+The failure mode is a loop: the agent regenerates the whole document, makes the same class of
+mistake, and fails identically. One run escaped 21 keys correctly and missed two — the
+document was several KB — and burned fifteen minutes across five attempts before it was
+killed. Nothing in the error said which two quotes were wrong.
+
+Instead:
+
+1. Write a short script to a file at the run root — never inside the checkout.
+2. Build the document as a native object and serialise it with a real JSON library
+   (`json.dump(obj, f, ensure_ascii=True, indent=2)`). The library handles every quote,
+   backslash, newline and non-ASCII character correctly; hand-escaping does not.
+3. Run the script, then load the file back and confirm it parses.
+
+No string concatenation, no f-strings, no heredocs, no manual quoting of the document. If you
+find yourself typing a backslash before a quote inside your model, stop — that is the failure
+beginning.
+
 ## Prove the File Exists Before Reporting It
 
 After writing your output, list it — `ls -l <the exact path>` — and confirm it is there and
