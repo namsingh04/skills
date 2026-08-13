@@ -58,12 +58,27 @@ The workflow expects the following inputs:
    - Git branch representing the existing implementation baseline.
    - Preserve the branch name exactly as provided.
 
-**There is no target branch input.** The working branch is cut from the source branch by a
-platform git node at run time, which names it and prompts the operator. No stage is told that
-name in advance and none needs it: every code-writing stage reads `HEAD` and asserts only that
-it is not the source branch. Do not require a target branch, do not derive one, and **do not
-raise a gap for its absence** — a gap flagged `requiresHumanInput` here opens a review form and
-asks a person about an input that was deliberately removed.
+**There is no second branch, and the manifest must not contain one.** The working branch is cut
+from the source branch by a platform git node at run time, which names it and prompts the
+operator. No stage is told that name in advance and none needs it: every code-writing stage
+reads `HEAD` and asserts only that it is not the source branch.
+
+So the `git` block carries `sourceBranch` and **nothing else**:
+
+- do not add a `targetBranch` key — not with a name, not with an empty string, not with `null`.
+  An empty key is worse than no key, because the next stage reads "empty" as "missing" and
+  raises a gap for it;
+- do not derive the branch from anywhere else. It is not in the inputs and it is not yours to
+  find. In particular the workflow's own run data may contain a node whose *label* mentions a
+  target branch — that is a graph label, not an input, and reading a value out of it is
+  inventing one;
+- **do not raise a gap for its absence**, and do not record a warning about it either. Nothing
+  is missing.
+
+This is not hypothetical bookkeeping. One run registered `git.targetBranch: ""`, the next stage
+turned that empty string into a gap flagged `requiresHumanInput`, and it travelled through both
+gap presenters, the resolver, code generation and finalization — putting a question about a
+deliberately-removed input in front of a human reviewer.
 
 ---
 
@@ -115,8 +130,9 @@ The manifest should reference artifacts rather than embedding their contents.
 
 ### 4. Register Git Context
 
-Record the source branch only, exactly as provided. There is no second branch to record: the
-working branch does not exist yet when this stage runs.
+Record the source branch only, exactly as provided. The `git` block has exactly one key. There
+is no second branch to record: the working branch does not exist yet when this stage runs, and
+emitting an empty placeholder for it creates a gap downstream.
 
 Do not infer:
 

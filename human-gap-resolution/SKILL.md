@@ -123,8 +123,8 @@ blocking flag. It presents and counts; the human decides and the resolver merges
 
 ## What the Reviewer Returns
 
-The same file, with `resolution` filled in on the gaps they chose to answer. For each gap,
-a resolution is one of:
+The same file, with `resolution` filled in on the gaps they chose to answer. **There are
+exactly three outcomes, and no fourth:**
 
 - **substantive text** — the value, decision or instruction that resolves the gap;
 - **the literal `DEFER`** — deliberately not resolving it; the gap carries forward
@@ -134,6 +134,30 @@ a resolution is one of:
 
 The reviewer may also add a top-level `reviewerNotes` string. Nothing else they add is
 read.
+
+### A decision is substantive. Do not invent a category to reject it.
+
+*"Out of scope"*, *"not required"*, *"not in scope"*, *"ignore this"*, *"use whatever the
+existing repo does"* — these are **answers**. A reviewer is entitled to close a gap by
+excluding it, not only by supplying a value. Treat them exactly like any other substantive
+resolution: mark the gap resolved, set `blocksCodeGeneration` to `false`, and record what was
+excluded and where.
+
+**You may not create a rejection class of your own.** Anything that is not `DEFER` and not
+empty is applied. Labels such as `non-substantive-resolution` or
+`ignored-control-or-nonvalue-resolution` are not part of this contract, and using one means a
+person's answer was silently discarded.
+
+This is a real defect, not a hypothetical. In one run the reviewer wrote *"snsAlarmNotification
+Target is out of scope"* and *"v2LeadsAndReceiptRoutingResources is out of scope"* — the same
+sentence about two different fields. One was applied and the other was thrown away as
+`non-substantive-resolution`. Three of seven answers were dropped that way and reported as
+ordinary deferrals.
+
+**Every scope exclusion is also recorded for a second look.** Add a `warnings` entry naming the
+gap, the field and what was excluded, and carry the same list into the stage's final report, so
+that what was dropped from scope is auditable before anyone merges. Excluding something is a
+legitimate decision; excluding it invisibly is not.
 
 ---
 
@@ -182,8 +206,16 @@ For each gap in the upload:
 - **substantive resolution** → mark the gap `resolved`, copy the text into `resolution`,
   set `blocksCodeGeneration` to `false`, and apply the value at the place in the model the
   gap's `field` names. Record what changed.
+- **a scope exclusion** — *"out of scope"*, *"not required"*, and the like → also a
+  substantive resolution. Mark it `resolved`, set `blocksCodeGeneration` to `false`, and
+  record in `warnings` and the final report what was excluded and where. The applied change
+  is the exclusion itself: the model must not carry the resource, field or behaviour forward
+  as though it were still in scope.
 - **`DEFER` or empty** → carry the gap forward untouched, still unresolved, with its
   original `blocksCodeGeneration` value.
+
+**These are the only three branches.** If you find yourself writing a fourth — a reason why an
+answer does not count — you are discarding a person's work; apply it instead.
 
 Applying a resolution means writing the value where the model expects it — not appending a
 note. A resolution that was recorded but never applied is the failure mode this step
