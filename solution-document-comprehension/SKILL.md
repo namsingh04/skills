@@ -20,6 +20,40 @@ It is a mixed document. Treat each part with the method it needs, then reconcile
 | Tables (IAM, VPC, config) | Exact values, and the only place they appear | A table cell is authoritative and must be transcribed exactly, not paraphrased. |
 | Mock / sample data | Request and response shapes, the basis of every test | Sample data is *evidence of a contract*, not decoration. It survives into `Test-Fixtures.json`. |
 
+## When the document is a Confluence page
+
+This is the usual case, and the tooling is narrower than you might assume. **One tool exists:
+`confluence_get_page`.** There is no attachment download, no child-page listing, no search.
+Everything below follows from that.
+
+**Call it with `convert_to_markdown: true`.** Tables arrive as markdown tables, which is what
+the table extraction skill expects. Raw HTML forces you to parse storage format by hand and is
+where transcription errors come from.
+
+**A page id or a URL both work.** From a URL, the id is the numeric segment after `/pages/`.
+If you were given a title instead, it needs the space key alongside it.
+
+**You get one page. You do not get its children.** If the page links to, or names, further
+pages — "see the Integration Design page", a child-page macro, a table of contents pointing
+elsewhere — **that content has not been retrieved.** Fetch each referenced page id you can
+identify, and for any you cannot resolve, record it in `unreadable` and raise a `MISSING` gap
+naming the link. A solution design split across a parent and four children, read as one page,
+is the most expensive silent failure available here: everything downstream inherits the
+missing four and nothing reports a problem.
+
+**Macros and attachments do not render.** A draw.io or Gliffy diagram, an embedded image, an
+attached spreadsheet — these come back as a macro placeholder or nothing at all. You cannot
+retrieve them, so:
+
+- If a **mermaid code block** is present, use it. It is machine-readable and is what the
+  author last edited. This is why mermaid outranks the rendered image.
+- If the only diagram is a macro or an image, record it in `unreadable` with what the
+  placeholder said, and raise a gap. Do not infer the architecture from the surrounding prose
+  and present it as extracted — a diagram you reconstructed from a caption is a diagram
+  nobody drew.
+- An attached spreadsheet of IAM rules is unreachable. Say so; do not treat the prose summary
+  of it as the table.
+
 ## Method
 
 **1. Inventory before extraction.** List every section, table, diagram and code block, with
