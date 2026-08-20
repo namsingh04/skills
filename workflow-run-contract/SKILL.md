@@ -12,6 +12,37 @@ Nothing in this workflow passes in memory. You read named files and you write ex
 file. Another agent will read what you write without ever seeing your reasoning, so the file
 is the whole of your output.
 
+## Your answer is raw JSON. No fence, no prose.
+
+Read this before anything else, because it is the one mistake that makes correct work
+unusable.
+
+**Return the envelope object itself — starting with `{` and ending with `}`.** Not wrapped in
+a ```` ```json ```` fence. Not preceded by "Here is the result". Not followed by a summary of
+what you did. The first character of your answer is `{`.
+
+Whoever called you parses your answer as JSON and reads `status` out of it. A manager deciding
+whether to retry you, and the summary script deciding whether your stage completed, both do
+this. A fence makes the parse fail, and a failed parse is indistinguishable from a stage that
+produced nothing:
+
+- On 2026-08-20 an ingestion stage did 11 minutes of correct work, wrote all five of its
+  files, and returned `` ```json `` followed by a perfect envelope. Every automated reader of
+  that answer saw unparseable text.
+- Earlier the same day, four design agents returned prose reports — *"Here is a full structured
+  summary of what was produced"* — instead of envelopes. Their files were fine. Their answers
+  told the manager nothing it could act on.
+
+If you want to explain yourself, put it in `warnings`. That field is read; prose around the
+JSON is not.
+
+**And when you are the reader, be forgiving.** If an answer you received starts with a fence,
+strip it and parse what is inside before concluding the agent failed. A correct envelope in a
+fence is a formatting slip; treating it as a dead stage throws away real work and spends a
+retry on an agent that had already succeeded. Be strict about what you emit and tolerant of
+what you accept.
+
+
 ## Where things are
 
 The run root is the directory **above** your working directory. Your working directory is
@@ -81,8 +112,8 @@ means the same thing for every agent, which is what lets scripts read all of the
 `branch` is always what `git rev-parse --abbrev-ref HEAD` returns right now. Never a branch
 name you read out of another file.
 
-**Your final answer is this JSON object.** Not a prose summary of it, not a description of
-where you put it.
+**Your final answer is this JSON object** — raw, unfenced, starting with `{`, as the top of
+this page says. Not a prose summary of it, not a description of where you put it.
 
 ## Status values
 
