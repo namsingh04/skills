@@ -118,8 +118,21 @@ present and empty, not absent.
 Your stage-specific content goes in `payload` and nowhere else. Everything outside `payload`
 means the same thing for every agent, which is what lets scripts read all of them.
 
-`branch` is always what `git rev-parse --abbrev-ref HEAD` returns right now. Never a branch
-name you read out of another file.
+`branch` is always what git reports right now -- never a name you read out of another file.
+
+**Run git inside the CHECKOUT, not the run root.** `workflow_output` is not a git repository, so
+`git rev-parse` from there fails and you will record a non-answer. On 2026-08-20 five agents in
+one run wrote five different values for the same branch -- `unknown`, `HEAD`, `no-git`, an empty
+string, and the real name -- purely from where each happened to be standing.
+
+```
+git -C <checkout> rev-parse --abbrev-ref HEAD
+```
+
+The checkout is the directory holding `.git`, one level below the run root; from
+`workflow_output` it is `../src`. Name it explicitly with `-C` rather than trusting your
+working directory. And if git still gives you nothing, record the failure in `warnings` --
+never a placeholder like `unknown` that reads downstream as if it were a branch name.
 
 **Your final answer is this JSON object** — raw, unfenced, starting with `{`, as the top of
 this page says. Not a prose summary of it, not a description of where you put it.
@@ -167,7 +180,7 @@ agent writes, which is exactly why it is the test.
 
 1. Return that JSON unchanged.
 2. Add one `warnings` entry recording that you resumed from a restored output.
-3. Rewrite every branch field from `git rev-parse --abbrev-ref HEAD`, and add a warning
+3. Rewrite every branch field from `git -C <checkout> rev-parse --abbrev-ref HEAD`, and a warning
    saying you corrected it. **A resumed run is on a different branch** — the run you are
    resuming died before it committed, so it never pushed its branch and there was nothing to
    check out. Any branch name in the restored file names a branch that does not exist here.
