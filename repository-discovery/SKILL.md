@@ -1,6 +1,9 @@
 ---
-name: repository-discovery
-description: Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. Use when analysing the target repository before generating code into it.
+name: "repository-discovery"
+description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. Use when analysing the target repository before generating code into it."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Repository discovery

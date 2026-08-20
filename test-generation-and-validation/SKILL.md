@@ -1,6 +1,9 @@
 ---
-name: test-generation-and-validation
-description: Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents.
+name: "test-generation-and-validation"
+description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Test generation and validation

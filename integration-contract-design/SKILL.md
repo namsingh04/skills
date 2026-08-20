@@ -1,6 +1,9 @@
 ---
-name: integration-contract-design
-description: Specify every boundary the system talks over as request shape, response shape, error behaviour and a concrete sample exchange, and emit the test fixtures that make those contracts testable. Use in the specification stage for interfaces and integrations.
+name: "integration-contract-design"
+description: "Specify every boundary the system talks over as request shape, response shape, error behaviour and a concrete sample exchange, and emit the test fixtures that make those contracts testable. Use in the specification stage for interfaces and integrations."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Integration contract design

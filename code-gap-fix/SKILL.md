@@ -1,6 +1,9 @@
 ---
-name: code-gap-fix
-description: Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure.
+name: "code-gap-fix"
+description: "Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Code gap fix

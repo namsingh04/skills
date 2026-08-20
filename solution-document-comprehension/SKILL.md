@@ -1,6 +1,9 @@
 ---
-name: solution-document-comprehension
-description: Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file.
+name: "solution-document-comprehension"
+description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Solution document comprehension

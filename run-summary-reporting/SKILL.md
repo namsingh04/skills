@@ -1,6 +1,9 @@
 ---
-name: run-summary-reporting
-description: Report what a run actually did - stages complete, skipped and retried, gaps resolved and deferred, validation results, and where the code landed - without rounding anything up. Use when assembling or interpreting the execution summary.
+name: "run-summary-reporting"
+description: "Report what a run actually did - stages complete, skipped and retried, gaps resolved and deferred, validation results, and where the code landed - without rounding anything up. Use when assembling or interpreting the execution summary."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Run summary reporting

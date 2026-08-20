@@ -1,6 +1,9 @@
 ---
-name: language-toolchain-detection
-description: Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code.
+name: "language-toolchain-detection"
+description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Language and toolchain detection

@@ -1,6 +1,9 @@
 ---
-name: requirement-decomposition
-description: Separate business, functional, non-functional and technical requirements cleanly, and write each as a discrete testable statement with its source. Use in the analysis stage by the business, functional, non-functional and technical requirement agents.
+name: "requirement-decomposition"
+description: "Separate business, functional, non-functional and technical requirements cleanly, and write each as a discrete testable statement with its source. Use in the analysis stage by the business, functional, non-functional and technical requirement agents."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Requirement decomposition

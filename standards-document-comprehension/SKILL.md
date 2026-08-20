@@ -1,6 +1,9 @@
 ---
-name: standards-document-comprehension
-description: Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page.
+name: "standards-document-comprehension"
+description: "Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Standards document comprehension

@@ -1,6 +1,9 @@
 ---
-name: infrastructure-resource-design
-description: Turn requirements and the tables that accompany them - IAM policies, VPC and network settings, resource configuration - into a resource specification where every resource, permission and boundary traces to a source row. Use in the specification stage for infrastructure work.
+name: "infrastructure-resource-design"
+description: "Turn requirements and the tables that accompany them - IAM policies, VPC and network settings, resource configuration - into a resource specification where every resource, permission and boundary traces to a source row. Use in the specification stage for infrastructure work."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Infrastructure resource design

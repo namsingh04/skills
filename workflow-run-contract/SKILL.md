@@ -1,6 +1,9 @@
 ---
-name: workflow-run-contract
-description: The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work.
+name: "workflow-run-contract"
+description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Workflow run contract

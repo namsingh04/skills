@@ -1,6 +1,9 @@
 ---
-name: output-validation
-description: How a stage validator behaves - read artifacts from their paths, check structure and consistency rather than taste, and return PASS or FAIL with the failed component named and a reason specific enough to retry against. For every validation gate agent.
+name: "output-validation"
+description: "How a stage validator behaves - read artifacts from their paths, check structure and consistency rather than taste, and return PASS or FAIL with the failed component named and a reason specific enough to retry against. For every validation gate agent."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Output validation

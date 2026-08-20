@@ -1,6 +1,9 @@
 ---
-name: code-generation-conventions
-description: Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies. Use by every code-writing agent.
+name: "code-generation-conventions"
+description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies. Use by every code-writing agent."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Code generation conventions

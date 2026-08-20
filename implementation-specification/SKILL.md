@@ -1,6 +1,9 @@
 ---
-name: implementation-specification
-description: Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage.
+name: "implementation-specification"
+description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Implementation specification

@@ -1,6 +1,9 @@
 ---
-name: authority-chain-and-gap-detection
-description: The precedence order between solution document, Jira, standards and repository, and the rules for what counts as a genuine design gap versus a value that is simply unknown until deployment. Use whenever sources disagree or something needed is absent.
+name: "authority-chain-and-gap-detection"
+description: "The precedence order between solution document, Jira, standards and repository, and the rules for what counts as a genuine design gap versus a value that is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Authority chain and gap detection

@@ -1,6 +1,9 @@
 ---
-name: additional-instruction-triage
-description: Decide what a free-text "additional information" instruction means for this run - mandatory in scope, a narrowing of scope, an out-of-scope exclusion, or nothing at all. Use when the run supplies extra operator instructions alongside the formal inputs.
+name: "additional-instruction-triage"
+description: "Decide what a free-text 'additional information' instruction means for this run - mandatory in scope, a narrowing of scope, an out-of-scope exclusion, or nothing at all. Use when the run supplies extra operator instructions alongside the formal inputs."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Additional instruction triage

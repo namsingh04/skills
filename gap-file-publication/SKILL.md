@@ -1,6 +1,9 @@
 ---
-name: gap-file-publication
-description: Assemble the design gaps raised across every stage into one reviewable file, deduplicated, ordered by what actually blocks progress, and decide whether a human needs to see it at all. Use by the gap presenter and the gap decision agents.
+name: "gap-file-publication"
+description: "Assemble the design gaps raised across every stage into one reviewable file, deduplicated, ordered by what actually blocks progress, and decide whether a human needs to see it at all. Use by the gap presenter and the gap decision agents."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Gap file publication

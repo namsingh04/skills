@@ -1,6 +1,9 @@
 ---
-name: agent-retry-and-failure
-description: How to retry, how much, and how to report a failure so the run can recover. Covers the two-retry cap and its durable ledger, telling a startup failure apart from a work failure, and the four fields every failure must carry. Attached to every agent node.
+name: "agent-retry-and-failure"
+description: "How to retry, how much, and how to report a failure so the run can recover. Covers the two-retry cap and its durable ledger, telling a startup failure apart from a work failure, and the four fields every failure must carry. Attached to every agent node."
+version: 1
+created: "2026-08-20"
+updated: "2026-08-20"
 ---
 
 # Retry and failure
@@ -109,6 +112,28 @@ Non-negotiable, in the `failure` object:
 Guessing here is worse than useless. If you do not know whether something is retryable, say
 what you observed and mark it retryable — a wasted retry is cheaper than a run abandoned by
 mistake.
+
+## Never report a sub-agent you did not invoke
+
+If you are a manager, the only sub-agents you may report as having run are ones you actually
+called. On 2026-08-20 a code generation manager emitted a `subAgentExecution` block listing six
+agents as `OK`, each with the files it supposedly owned, when not one of them had started —
+the platform had offered it no way to call them. Nothing downstream questioned it, and the run
+reported success.
+
+So:
+
+- A sub-agent you called and that returned → report what it returned.
+- A sub-agent you deliberately skipped because its output was already complete → report it as
+  skipped, and say why.
+- A sub-agent you had **no way to call** → that is not success and it is not silence. Report
+  `PARTIAL`, record in `failure.reason` that no delegation tool was available, and say which
+  agents were therefore never run. That reads as a wiring problem to whoever sees it, which is
+  exactly what it is.
+
+Never synthesise a result on a sub-agent's behalf and present it as theirs. If you did the work
+yourself because you could not delegate, say that plainly — an honest "I did this inline" is
+recoverable; an invented delegation record is not, because it hides the fault that caused it.
 
 ## Things that are not failures
 
