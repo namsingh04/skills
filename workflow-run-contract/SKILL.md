@@ -194,6 +194,20 @@ that are missing. Skipping an invocation costs nothing; invoking an agent so it 
 its own output still starts an agent, still burns context, and still exposes the run to a
 startup failure. Record in `warnings` which sub-agents you skipped and which you ran.
 
+## An input you cannot read is reported, never worked around
+
+If a file you were told to read is not there, **say so in `warnings` and quote the exact path
+you were given.** Then continue with what you do have, and mark the output `PARTIAL`.
+
+Paths handed to you can be wrong. On 2026-08-20 four of eleven delegation messages contained a
+mangled path — a duplicated directory segment spliced into the middle — and in two of them the
+mangled one was `Solution-Model.json`, the most important input in the run. An agent that
+quietly proceeds on the inputs it happened to find still produces a confident, complete-looking
+answer, and nothing downstream can tell that its main source was missing.
+
+Do not silently repair the path either. If you find the file somewhere else, say that too: a
+mistyped path is a defect in the caller, and it stays invisible until someone reports it.
+
 ## Gaps
 
 Any agent may raise a gap. The shape:
@@ -230,7 +244,12 @@ support with a source reference should not be written.
 
 1. `write_file` succeeded, then **list the file** and confirm it is there and non-empty.
 2. Re-read it and confirm it parses as JSON.
-3. Confirm `status`, `stage`, `agent` and `outputPath` are all populated.
+3. **Confirm it is the ENVELOPE, not a bare payload.** `stage`, `agent`, `status`,
+   `outputPath` and `payload` must be at the TOP level, with your content inside `payload`.
+   Writing your profile or model straight to the file — correct content, no envelope around
+   it — is the failure a downstream gate cannot distinguish from a broken stage. It happened
+   on 2026-08-20: a good repository profile was rejected because it had no envelope, and the
+   whole analysis stage was failed and retried.
 4. Confirm `outputPath` is the exact path you were given.
 
 An agent that reports success without confirming the file exists is the single most common
