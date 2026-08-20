@@ -137,6 +137,23 @@ at all.
 In `create` mode nothing was restored, the file will not be there, and this check costs one
 read.
 
+### The one exception: code generation also needs its files to still exist
+
+A resume restores the previous run's **records**, never its **files**. The run being resumed
+died before it committed, so its generated code existed only in a container that is gone.
+
+Every stage before code generation produces records and nothing else, so the rule above is
+complete for them. Code generation is different: `40-codegen/Generated-Files.json` can come
+back with `status: OK` listing files that are not in this checkout.
+
+> **Code generation is complete only if its status is `OK`/`PARTIAL` AND every file it lists
+> still exists on disk.** One missing file makes the stage incomplete, and it regenerates.
+
+Check the paths before trusting that record. Skipping regeneration because a status field says
+so, when the files are gone, produces a run that reports success and commits nothing — the
+staging step then fails with "nothing to commit" two stages later, and the cause is not
+obvious from there.
+
 **If you are a manager, decide this per sub-agent, not per stage.** A run that died halfway
 leaves some outputs and not others, and the whole value of resuming is running only the ones
 that are missing. Skipping an invocation costs nothing; invoking an agent so it can notice
