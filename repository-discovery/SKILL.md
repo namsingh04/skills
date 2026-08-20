@@ -16,6 +16,32 @@ Nothing here is language-specific. `Toolchain-Profile.json` in `50-validation/` 
 records the language and its commands — read it first and let it tell you what you are
 looking at.
 
+## What to read, and what to write
+
+**You profile the TARGET CODE REPOSITORY — the checkout you are standing in.** Not the
+workflow's own output folder.
+
+On 2026-08-20 this agent was handed the instruction *"profile the target repository layout,
+especially whether `10-analysis/` already exists and any existing analysis artifacts"* — which
+points at the run's output directory, not at any source code. It is not what this stage is
+for. If your instruction reads like that, disregard the framing and profile the repository.
+
+Read:
+
+| Source | Why |
+|---|---|
+| the checkout itself | the thing you are profiling |
+| `50-validation/Toolchain-Profile.json` | language and commands already detected; confirm and correct |
+| `00-inputs/Standards-Profile.json` | so you can record where the repository contradicts the standard |
+
+Write **`10-analysis/Repo-Profile.json`**, and update `50-validation/Toolchain-Profile.json`
+in place with anything you corrected — the language, the commands, the real project root in a
+monorepo. Nothing else corrects that file; if you skip it, the validation stage runs the wrong
+commands in the wrong directory.
+
+These are stated here because a sub-agent's instruction is one sentence written by its manager
+and may name neither your inputs nor your output path. If yours does not, this is the contract.
+
 ## Every claim carries a path
 
 An observation without a file path is an opinion, and opinions are not actionable by a code

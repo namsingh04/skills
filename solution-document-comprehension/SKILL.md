@@ -44,18 +44,66 @@ naming the link. A solution design split across a parent and four children, read
 is the most expensive silent failure available here: everything downstream inherits the
 missing four and nothing reports a problem.
 
-**Macros and attachments do not render.** A draw.io or Gliffy diagram, an embedded image, an
-attached spreadsheet — these come back as a macro placeholder or nothing at all. You cannot
-retrieve them, so:
+**With `include_metadata: true` the page body arrives at `metadata.content.value`** — not at a
+top-level `content` key. Look there before concluding the page was empty.
 
-- If a **mermaid code block** is present, use it. It is machine-readable and is what the
-  author last edited. This is why mermaid outranks the rendered image.
-- If the only diagram is a macro or an image, record it in `unreadable` with what the
-  placeholder said, and raise a gap. Do not infer the architecture from the surrounding prose
-  and present it as extracted — a diagram you reconstructed from a caption is a diagram
-  nobody drew.
-- An attached spreadsheet of IAM rules is unreachable. Say so; do not treat the prose summary
-  of it as the table.
+### Macros are FLATTENED, not dropped — the diagram is usually still there
+
+This is the single most misleading thing about the conversion, and it has already cost a run.
+
+Confluence renders diagrams and code blocks as *macros*. `convert_to_markdown` emits each
+macro's **parameters as bare text glued to the front of its first content line**, and drops
+the fence. A real example from page 2330297141:
+
+```
+graphqlHLD\_Codetrueflowchart TB
+GW["Messaging gateway<br/>e.g. Infobip / WhatsApp"] -->|publishes message| SQS[(...)]
+```
+
+That is a complete mermaid flowchart. `flowchart TB` is the real first line; `graphqlHLD\_Codetrue`
+is the macro's language, title and a boolean, concatenated.
+
+So:
+
+- **Never search for a ```` ```mermaid ```` fence.** There is not one, and the word "mermaid"
+  may not appear anywhere on the page — that macro declares its language as `graphql`. On
+  2026-08-20 an agent searched for the fence, found nothing, declared both architecture
+  diagrams unreadable, and marked the model PARTIAL while the source sat one token away.
+- **Search for the mermaid keywords**: `flowchart`, `sequenceDiagram`, `graph TD|TB|LR|RL`,
+  `classDiagram`, `erDiagram`, `stateDiagram`, `gantt`, `journey`. Fenced or not.
+- **Strip the macro prefix.** The diagram starts at that keyword; everything before it on the
+  line is macro parameters. Take from the keyword to the blank line.
+- **A diagram whose source you recovered is READ.** Do not put it in `unreadable` and do not
+  mark the model PARTIAL because a `.png` or `.drawio` attachment of the same diagram cannot
+  be downloaded. The attachment is a *rendering* of what you already have.
+- Only a diagram with **no textual source anywhere** is unreadable. Record it, raise a gap, and
+  never reconstruct it from a caption — a diagram you inferred is a diagram nobody drew.
+
+### The conversion also corrupts values — check before transcribing
+
+- **Markdown escapes leak into identifiers.** `\*.paceai.heliosnissan.net`, `HLD\_Code`,
+  `\*Engage`. Un-escape `\*`, `\_`, `\-`, `\.` before any value goes into a table, ARN,
+  hostname or config key.
+- **Characters are dropped around inline code in table cells.** The same page yielded
+  `` ``` rn:aws:sqs:us-east-1:422774525419:… `` — the leading `a` of `arn` gone, while the DLQ
+  ARN in the very next cell survived intact.
+- So **sanity-check structured values**: an ARN must start with `arn:`, a URL must have a
+  scheme, a CIDR must parse. One that does not was damaged in conversion — raise a gap naming
+  the cell rather than passing the broken value downstream into IAM or config.
+
+### A linked page you cannot fetch by id — try title and space key
+
+`confluence_get_page` takes **either** a `page_id` **or** a `title` plus a `space_key`. A
+solution document routinely links to another page by title alone, with no numeric id.
+
+On 2026-08-20 the design linked to *"CDK Existing VPC, SUBNET, GROUP IDS Details - Nissan
+Optimise"*. The agent saw no page id, gave up, and raised a MISSING gap — so the VPC ids,
+subnet ids and security-group ids for three environments were simply absent from the run.
+They were one call away: the title was in the text and the space key (`PACEP`) was in the
+metadata of the page already fetched.
+
+So: **no id → retry with `title` and the current page's `metadata.space.key`.** Only when
+*that* fails is it a `MISSING` gap, and then say both things you tried.
 
 ## Method
 

@@ -13,6 +13,36 @@ category. Everything you find that belongs to another category you **hand over r
 keep** — record it in `crossCategory` so the agent who owns it can pick it up, and do not
 write it as though it were yours.
 
+## What to read — nobody else will tell you
+
+**Read these four files before anything else**, at `<run root>/workflow_output/`:
+
+| File | What it gives you |
+|---|---|
+| `00-inputs/Input-Manifest.json` | what was supplied, and what was not |
+| `00-inputs/Solution-Model.json` | the solution design — highest authority for what to build |
+| `00-inputs/Jira-Model.json` | issues and acceptance criteria — authority for what "done" means |
+| `00-inputs/Additional-Instruction.json` | scope: what is in, what is narrowed, what is excluded |
+
+The run root is the directory **above** your working directory, so these are normally at
+`../workflow_output/00-inputs/`.
+
+This list is here, in the skill, because **it may not reach you any other way.** When you run
+as a sub-agent your instruction is a single sentence composed by your manager — it names what
+to produce and where to write it, and on 2026-08-20 it named no inputs at all. Every analysis
+agent that run returned PARTIAL for exactly that reason: told what to extract, never told what
+to extract it *from*. If your instruction does not name your inputs, do not guess and do not
+work from the instruction alone — the four files above are your inputs.
+
+If a file is absent or unparseable, say so in `warnings` and work from what remains. Only a
+missing Solution-Model **and** Jira-Model together is `BLOCKED`.
+
+## Which category is yours
+
+Your manager's message names it. If it does not, infer it from the output path you were given —
+`Business.json`, `Functional.json`, `NonFunctional.json`, `Technical.json` — and say in
+`warnings` that you inferred it.
+
 ## The four categories, and the test that separates them
 
 | Category | Answers | Test that it belongs here |
