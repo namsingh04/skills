@@ -19,6 +19,11 @@ ones by style alone?** If yes, the work is not done, however correct the logic.
 `00-inputs/Standards-Profile.json` — the rules.
 `50-validation/Toolchain-Profile.json` — the language and its commands.
 
+**Read `20-spec/Implementation-Spec.json`'s `coverage.deferredToStage`.** Any entry naming
+`codegen` is a requirement the specification stage deliberately handed to you — `TC-029:
+requirements.txt must pin exact versions`, for instance. Treat those as your own obligations
+and cite them in the `satisfies` of the files you write; nothing else will.
+
 **You do not read the requirements models, and you must not.** If the spec does not say it,
 it is not yours to infer. A gap in the spec is a gap to report, not a hole to fill with a
 guess about what the business probably wanted — the specification stage exists precisely so

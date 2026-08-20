@@ -41,6 +41,60 @@ writes. A requirement id cited in the spec that does not exist in the requiremen
 actually resolve? This is most of your value: individual files are usually well-formed, and
 what breaks runs is two of them disagreeing.
 
+## You do not define schemas. You check against the producing skill's.
+
+**Before you fail a file for a missing field, confirm that field is named in the skill that
+produces the file.** If it is not there, you have invented it — and an invented requirement
+sends a correct file back to be "repaired" when nothing was wrong.
+
+This is not hypothetical. On 2026-08-20 this gate failed `Test-Fixtures.json` with:
+
+> Every fixture is missing a `scenario` field (the file uses `operation`, `description`, and
+> `kind` instead). Every fixture is missing a `response` field (the file uses
+> `expectedResponse` instead).
+
+Neither `scenario` nor a top-level `response` appears in `integration-contract-design`, which
+defines that file. The designer had written exactly the specified shape. The manager relayed
+the invented requirement, the designer "fixed" a correct file, and the stage spent three rounds
+and roughly forty minutes converging on nothing.
+
+So:
+
+1. **Find the authoritative field list** — the `## Output` section of the skill that produces
+   the artifact. That list, and nothing else, is what "required fields" means.
+2. **Quote it** in your finding. A `validationErrors` entry that names a missing field must be
+   able to say which skill requires it. If you cannot name one, do not raise the error.
+3. **A different name for the same idea is not a missing field.** `expectedResponse` where you
+   expected `response` is your expectation being wrong, not the file.
+4. **No authoritative list available?** Then check only that the file exists, parses, carries
+   the envelope, and is non-empty — and record in `warnings` that you had no schema to check
+   against. An honest "I could not verify the shape" is worth more than a confident invented
+   failure.
+
+Extra fields are never an error. A file may carry more than the skill lists.
+
+## How a MUST requirement is legitimately discharged
+
+Forward coverage — every MUST cited by some spec unit — has three exits besides the obvious
+one, and rejecting them produces failures nothing can fix.
+
+A MUST counts as **covered** if any of these hold:
+
+| route | what it looks like | why |
+|---|---|---|
+| cited | the id appears in a unit's `satisfies` | the normal case |
+| **prohibition** | recorded in `constraintsObserved[]` | a "must NOT" is discharged by *absence*; no unit can implement not-doing-something, so it can never appear in `satisfies` |
+| **stage-deferred** | recorded in `deferredToStage[]` with the stage named | the obligation belongs to a later stage and that stage reads it as input |
+| declared uncovered | listed in `uncovered[]` with a reason and a gap id | the honest admission, already required |
+
+Only a MUST in **none** of the four is a coverage failure.
+
+The same run failed on TC-014, TC-015 and TC-016 — all of the form *"the DynamoDB retry
+mechanism must NOT be adopted"* — and on TC-029, *"requirements.txt must pin exact versions"*,
+which the code stage owns. The spec had recorded the prohibitions in text notes and the gate
+rejected them: *"text references do not satisfy forward coverage."* There was no form the
+designer could have written that would have passed.
+
 ## What you do not check
 
 - Style, wording, naming taste, or how you would have done it.

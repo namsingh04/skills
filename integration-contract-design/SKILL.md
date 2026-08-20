@@ -27,6 +27,13 @@ field somebody else's system does not send.
 
 ## Sample exchanges become the tests
 
+**THE FIXTURE FIELD LIST BELOW IS AUTHORITATIVE.** It is the only definition of a
+`Test-Fixtures.json` entry, and a validator checking that file checks against this list and
+nothing else. The fields are `id`, `contract`, `operation`, `description`, `request`,
+`expectedResponse`, `source`, `satisfies`, `kind` — note `expectedResponse`, not `response`,
+and note that there is no `scenario` field. A gate that demands either has invented it; on
+2026-08-20 exactly that cost the specification stage three rounds.
+
 `00-inputs/Solution-Model.json` has a `sampleExchanges` array. That is the most valuable
 thing in this pipeline: it is the only place where the expected behaviour exists as *data*
 rather than as description, and data is what a test can assert against.

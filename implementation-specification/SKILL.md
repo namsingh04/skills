@@ -90,6 +90,24 @@ The test: *if a reviewer would want to have been asked, ask.*
 
 ## Coverage
 
+### A prohibition is discharged by absence, not by a unit
+
+Some requirements say "must NOT". `TC-014: the DynamoDB retry mechanism must NOT be adopted`
+cannot be cited in any unit's `satisfies` — there is no unit that implements not-doing-
+something. Record it in **`constraintsObserved`**: the requirement id, what you deliberately
+did not build, and what you used instead. That is the only form a prohibition can take, and it
+is stronger traceability than a prose note, which a gate cannot count.
+
+### A requirement another stage owns goes to that stage, by name
+
+`TC-029: requirements.txt must pin exact versions` is a code-generation obligation. Record it
+in **`deferredToStage`** with the stage named and why. The code stage reads that list as its
+own input, so the requirement is carried rather than lost — and the coverage check stops
+demanding that the spec satisfy something the spec cannot.
+
+Neither of these is a way to make an inconvenient requirement disappear. Both require you to
+say something explicit; silence is still an uncovered MUST.
+
 Before you finish, check both directions:
 
 - Every `MUST` requirement is cited by at least one spec unit. Requirements with no unit go in
@@ -112,7 +130,15 @@ Write `20-spec/Implementation-Spec.json`. In `payload`:
   "reuse": [{"existing": "src/errors.py:IngestError", "usedBy": ["SPEC-007"]}],
   "coverage": {
     "requirementsCovered": ["FR-004"],
-    "uncovered": [{"requirement": "NFR-005", "reason": ""}],
+    "constraintsObserved": [
+      {"requirement": "TC-014", "notBuilt": "no DynamoDB retry/requeue table",
+       "insteadUsed": "SQS native redrive via maxReceiveCount"}
+    ],
+    "deferredToStage": [
+      {"requirement": "TC-029", "stage": "codegen",
+       "why": "requirements.txt is written by the scaffold agent, not specified here"}
+    ],
+    "uncovered": [{"requirement": "NFR-005", "reason": "", "gap": "GAP-spec-004"}],
     "unitsWithoutRequirement": []
   },
   "assumptions": [{"statement": "", "because": "", "gap": "GAP-spec-004"}]
