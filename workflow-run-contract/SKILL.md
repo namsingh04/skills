@@ -36,6 +36,15 @@ produced nothing:
 If you want to explain yourself, put it in `warnings`. That field is read; prose around the
 JSON is not.
 
+**The one exception, and it is narrow.** If your own instruction tells you to answer with a
+bare value -- a single word, a number, `true` or `false` -- because a conditional node reads
+your answer directly, then that bare value IS your answer. Do not wrap it in an envelope, do
+not add JSON around it, do not write a file. On 2026-08-20 an agent asked for the bare word
+`true` followed this page instead of its own instruction, returned a 1126-character envelope,
+and the conditional it fed could not evaluate it: *"There's a problem with your condition. You
+wrote: {"schemaVersion":..."*. Everything upstream had succeeded. When your instruction and
+this page disagree about the SHAPE of your answer, your instruction wins.
+
 **And when you are the reader, be forgiving.** If an answer you received starts with a fence,
 strip it and parse what is inside before concluding the agent failed. A correct envelope in a
 fence is a formatting slip; treating it as a dead stage throws away real work and spends a
