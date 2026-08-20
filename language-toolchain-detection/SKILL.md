@@ -126,6 +126,37 @@ Update `50-validation/Toolchain-Profile.json` in place:
 `runPrefix` saves every downstream agent from re-deriving whether commands need `poetry run`
 or `uv run` in front of them.
 
+## A monorepo has no manifest at its root
+
+This is common and it is the case that has already cost a run. On 2026-08-20 a repository of
+some forty Python projects under `pace-glue/` and `pace-lambda/` -- each with its own
+`requirements.txt`, none at the top -- was profiled as `language: unknown`. Nothing was
+installed, every validation check was skipped, and the run generated 22 files including 8
+pytest files that were never executed. It reported success.
+
+So when the checkout root holds no manifest, **do not conclude the language is unknown.** Look
+one to four levels down for project roots, skipping `node_modules`, `.venv`, `site-packages`,
+`vendor`, `__pycache__` and the like. The preflight script now does this and records what it
+found in `candidateRoots[]`.
+
+Two things follow, and both matter:
+
+**The language is decided; the directory is not.** `candidateRoots` lists every project root
+found. Which one this run targets is not knowable at preflight time -- it depends on a
+specification that has not been written yet. So the profile carries `status: PARTIAL` and a
+warning saying the commands are right for the language but must be run inside the target
+project. Run Validation resolves the directory from `40-codegen/Generated-Files.json`, because
+the generated files are the only artifact that knows where the run actually wrote.
+
+**Do not prune directories by build-output name.** `dist`, `build`, `target`, `out` and `bin`
+are ordinary project names in a monorepo. Pruning them by name lost a real project in testing:
+the container `pace-lambda/target/` matched, and the project at `pace-lambda/target/target/`
+was never reached. Prune only what is never a project root and always enormous.
+
+When you correct the profile as RepositoryDiscoveryAgent, keep `candidateRoots` — a later stage
+reads it. If you can tell from the specification which project is being targeted, say so in a
+`targetRoot` field; if you cannot, leave it out rather than guessing.
+
 ## An unknown language is a PARTIAL, not a failure
 
 An empty repository, or one with no recognisable manifest, is legitimate — especially on a
