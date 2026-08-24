@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. Use when analysing the target repository before generating code into it."
-version: 1
+version: 4
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-24"
 ---
 
 # Repository discovery
@@ -32,7 +32,6 @@ Read:
 |---|---|
 | the checkout itself | the thing you are profiling |
 | `50-validation/Toolchain-Profile.json` | language and commands already detected; confirm and correct |
-| `00-inputs/Standards-Profile.json` | so you can record where the repository contradicts the standard |
 
 Write **`10-analysis/Repo-Profile.json`**, and update `50-validation/Toolchain-Profile.json`
 in place with anything you corrected — the language, the commands, the real project root in a
@@ -94,7 +93,42 @@ Work outside-in and cheaply. Do not read the whole repository.
    patterns repeat.
 
 Use `command_line` for structure (`ls`, `find`, `git ls-files`, `wc -l`) before reading
-anything. Cheap, and it tells you where to look.
+anything. Cheap, and it tells you where to look. **Keep every listing scoped and bounded** —
+target the candidate roots, not the whole tree, and pipe through `head` (e.g. `git ls-files | head
+-200`). A full `ls -R` / unbounded `find` of a large monorepo dumps tens of thousands of paths
+into your context, and that listing is then re-sent on every later turn — it is the single largest
+avoidable token cost in this stage.
+
+## Sibling projects are the runtime standard — record the skeleton
+
+A standards document states conventions in prose. It cannot know this repository's exact
+layout. The repository itself does — and in a monorepo the strongest evidence of "what a
+project here must contain" is the **projects already sitting next to the one you are adding**.
+
+On 2026-08-21 a run generated seven `.py` files into a new lambda and **no `requirements.txt`**,
+because nothing bound the code stage to the repo's shape. The repository held ~40 sibling
+lambdas, every one of them carrying its own `requirements.txt` on an identical path. That
+inventory was the answer, and it was never recorded.
+
+When the target is a new project among siblings that share a layout, find the **nearest sibling**
+— the existing project most structurally similar to the one being added — and record its file
+inventory as a `projectSkeleton`. This makes "the config is present" a checkable condition the
+later stages and the pre-commit gate enforce, in ANY language, without hard-coding filenames.
+
+```json
+"projectSkeleton": {
+  "modelledOn": "<top>/<sibling-project>/<sibling-project>/",
+  "layout": "<top>/<name>/<name>/",
+  "requiredFiles": ["<manifest, e.g. the sibling's dependency file>", "<entry point>"],
+  "requiredDirs": ["<dirs every sibling has>"],
+  "evidence": ["<path to a sibling file proving the layout>"]
+}
+```
+
+- `requiredFiles` are the files EVERY sibling has (by basename) — the manifest and entry point,
+  not project-specific modules. Two siblings sharing a file makes it a convention; one does not.
+- Omit the whole `projectSkeleton` when there is no sibling to model on (a single-project repo,
+  or a genuinely empty one). An absent skeleton asserts nothing; a wrong one blocks a good run.
 
 ## Structure mismatch is a finding, not a failure
 
@@ -106,8 +140,8 @@ what is actually there. The specification stage adapts to the real layout — it
 to a layout you wished into the profile.
 
 An **empty or near-empty repository** is a legitimate and common case for a create run. Say
-so plainly, report `PARTIAL`, and note that the standards document and the toolchain profile
-are the only conventions available. Do not invent a layout and describe it as discovered.
+so plainly, report `PARTIAL`, and note that the toolchain profile is the only convention
+available. Do not invent a layout and describe it as discovered.
 
 ## Output
 
@@ -133,15 +167,15 @@ Write `10-analysis/Repo-Profile.json`. In `payload`:
   "entryPoints": [{"path": "", "kind": "", "note": ""}],
   "testing": {"framework": "", "layout": "", "representativeTest": "tests/test_ingest.py", "excerpt": ""},
   "dependencies": {"declared": [], "notablyUsed": []},
-  "conventionConflicts": [{"standardsRule": "STD-012", "repositoryDoes": "", "evidence": []}],
+  "projectSkeleton": {"modelledOn": "", "layout": "", "requiredFiles": [], "requiredDirs": [], "evidence": []},
   "notInspected": ["docs/", "infra/"]
 }
 ```
 
-`conventionConflicts` is important: where the repository contradicts the standards document,
-record both. **You do not resolve it** — the authority chain does, and it puts standards above
-repository. But an existing codebase that consistently violates its own standard is evidence
-worth surfacing, not a detail to smooth over.
+`projectSkeleton` is the layout later stages MUST reproduce — the nearest sibling project's
+required files and directory shape, however nested it is (some monorepos repeat the project name,
+e.g. `<top>/<name>/<name>/`). Getting it right is what prevents a generator from inventing a `src/`
+the repo does not have.
 
 `notInspected` keeps you honest. Sampling is correct; pretending you read everything is not.
 

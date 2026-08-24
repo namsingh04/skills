@@ -1,9 +1,9 @@
 ---
 name: "test-generation-and-validation"
 description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
-version: 1
+version: 3
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-24"
 ---
 
 # Test generation and validation
@@ -32,6 +32,10 @@ From `10-analysis/Repo-Profile.json` and `50-validation/Toolchain-Profile.json`:
 
 Do not introduce a second test framework. Do not restructure the test suite.
 
+Keep filesystem inspection scoped to the TARGET project's test directory and pipe `ls`/`find`
+through `head`; do not scan the whole monorepo — a large listing is re-sent on every later turn and
+is the biggest avoidable token cost here.
+
 ## What to cover
 
 **Every fixture becomes at least one test**, named for the obligation it checks, citing the
@@ -44,8 +48,12 @@ specified; a suite that only tests success has tested the half that was going to
 error type — not an invented behavioural assertion. Say in the test name that the expected
 values were not specified.
 
-Do not chase a coverage percentage unless the standards profile sets one. Tests written to
-raise a number assert trivia, and the suite gets slower without getting stronger.
+Line coverage must exceed **85%** — the validation stage measures it and fails the run below
+that. Reach it the right way: cover the error and edge paths, which is usually where the missing
+coverage is, and where real defects hide. Do NOT reach it the wrong way — a test written only to
+raise the number, asserting nothing an obligation requires, makes the suite slower without making
+it stronger. Every test still traces to a fixture or an acceptance criterion; the 85% is a floor
+those honest tests must clear, not a target to game.
 
 ## Never edit the implementation to make a test pass
 

@@ -1,9 +1,9 @@
 ---
 name: "language-toolchain-detection"
 description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-21"
 ---
 
 # Language and toolchain detection
@@ -110,9 +110,11 @@ Update `50-validation/Toolchain-Profile.json` in place:
     "installDev": null,
     "build": null,
     "test": "poetry run pytest -q",
+    "coverage": "poetry run pytest -q --cov=. --cov-report=term-missing",
     "lint": "poetry run ruff check .",
     "typecheck": "poetry run mypy src"
   },
+  "coverageRegex": "TOTAL\\s+\\d+\\s+\\d+\\s+(\\d+(?:\\.\\d+)?)%",
   "evidence": {
     "install": "declared: pyproject.toml has [tool.poetry]",
     "test": "declared: .github/workflows/ci.yml runs 'poetry run pytest -q'",
@@ -128,6 +130,17 @@ Update `50-validation/Toolchain-Profile.json` in place:
 
 `runPrefix` saves every downstream agent from re-deriving whether commands need `poetry run`
 or `uv run` in front of them.
+
+## Coverage is a SEPARATE command
+
+Line coverage must exceed 85%, and the validation stage enforces it. Record a `coverage` command
+distinct from `test`, plus a `coverageRegex` that extracts the total line-% from that command's
+output. Keeping it separate is deliberate: the plain `test` command stays the authoritative
+pass/fail and is never broken by a missing coverage tool. Per language, the recipe is the one the
+ecosystem already uses — Python `pytest --cov --cov-report=term-missing` (regex on the `TOTAL`
+row), Node/jest `--coverage --coverageReporters=text` (the `All files` row), Go `go test -cover`
+(`coverage: NN.N% of statements`). A language with no clean built-in recipe records no coverage
+command; coverage is then reported as null, never a failure.
 
 ## A monorepo has no manifest at its root
 

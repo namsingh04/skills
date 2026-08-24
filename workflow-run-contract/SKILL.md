@@ -1,9 +1,9 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-21"
 ---
 
 # Workflow run contract
@@ -61,7 +61,7 @@ usually the repository checkout, so the run root is normally `..`.
 <run root>/workflow_output/
   _run/            run-config.json  retry-ledger.json  run-manifest.json
   00-inputs/       Input-Manifest.json  Solution-Model.json  Jira-Model.json
-                   Standards-Profile.json  Additional-Instruction.json
+                   Additional-Instruction.json
   10-analysis/     Business.json  Functional.json  NonFunctional.json  Technical.json
                    Repo-Profile.json  Analysis-Validation.json
   20-spec/         Infrastructure.json  Integration.json  BusinessLogic.json
@@ -238,7 +238,7 @@ Any agent may raise a gap. The shape:
 {
   "id": "GAP-<stage>-<n>",
   "type": "AMBIGUITY|CONTRADICTION|MISSING|OUT_OF_SCOPE",
-  "authoritySource": "solution|jira|standards|repository",
+  "authoritySource": "solution|jira|repository",
   "severity": "HIGH|MEDIUM|LOW",
   "requiresHumanInput": true,
   "blocksCodeGeneration": false,

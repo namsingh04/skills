@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 1
+version: 3
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-24"
 ---
 
 # Implementation specification
@@ -18,8 +18,9 @@ it eventually comes, arrives as a rewrite instead of a comment.
 ## What you read, and what you must not
 
 **Read:** `10-analysis/Functional.json`, `NonFunctional.json`, `Technical.json`,
-`Repo-Profile.json`, `00-inputs/Standards-Profile.json`, `Solution-Model.json`,
-`Additional-Instruction.json`, `50-validation/Toolchain-Profile.json`.
+`Repo-Profile.json` (the repository IS the standard — its layout and conventions are what the
+fileMap must match; use its `sourceRoots` exactly and never invent a `src/` prefix),
+`Solution-Model.json`, `Additional-Instruction.json`, `50-validation/Toolchain-Profile.json`.
 
 **Read but never translate directly:** `10-analysis/Business.json`. Business requirements
 tell you *why*, and why is context for judgement, never a source of implementation detail. If
@@ -38,7 +39,7 @@ For each unit of work:
 {
   "id": "SPEC-007",
   "unit": "ingest message validator",
-  "targetPath": "src/validation/message_validator.py",
+  "targetPath": "<exact repo-relative path per Repo-Profile.json sourceRoots — NOT a greenfield src/>",
   "responsibility": "one sentence, and only one",
   "inputs": [{"name": "", "shape": "", "source": "20-spec/Integration.json#/contracts/2"}],
   "outputs": [{"name": "", "shape": ""}],
@@ -55,8 +56,11 @@ For each unit of work:
 }
 ```
 
-**`targetPath` is a real path in this repository**, consistent with `Repo-Profile.json`. Not a
-path you would have chosen for a greenfield project.
+**`targetPath` is a real path in this repository**, taken from `Repo-Profile.json` `sourceRoots`
+and `projectSkeleton` — not a path you would have chosen for a greenfield project. Use the repo's
+real layout, however nested (some monorepos repeat the project name, `<top>/<name>/<name>/…`); do
+NOT prepend a `src/` the repo does not have. A wrong prefix here becomes a doubled `src/src/` when
+the code is written.
 
 **`behaviour` is given/then, and every entry cites a requirement.** A behaviour with no
 requirement id is a design decision you made unprompted — either find its requirement or drop

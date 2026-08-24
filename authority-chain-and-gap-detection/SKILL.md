@@ -1,9 +1,9 @@
 ---
 name: "authority-chain-and-gap-detection"
-description: "The precedence order between solution document, Jira, standards and repository, and the rules for what counts as a genuine design gap versus a value that is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
-version: 1
+description: "The precedence order between solution document, Jira and repository (the repository is the standard), and the rules for what counts as a genuine design gap versus a value that is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-21"
 ---
 
 # Authority chain and gap detection
@@ -11,10 +11,13 @@ updated: "2026-08-20"
 ## The chain
 
 ```
-solution document  >  jira  >  standards  >  repository
+solution document  >  jira  >  repository
 ```
 
-Higher wins. Two refinements that the bare ordering does not capture, and both matter:
+Higher wins. There is no separate standards document — **the repository is the standard.** Its
+conventions, naming, layout and project skeleton (recorded in `Repo-Profile.json`) are what the
+generated code must conform to. Two refinements that the bare ordering does not capture, and both
+matter:
 
 **The solution document is authority for *what to build*. Jira acceptance criteria are
 authority for *what "done" means*.** They are not competing on the same question. Where the
@@ -22,10 +25,9 @@ solution design describes behaviour and an acceptance criterion describes how th
 will be verified, both stand — the AC is the test, the design is the thing being tested.
 
 **A conflict is only resolved by the chain when the two sources are answering the same
-question.** If the solution document says "retry three times" and the standards document says
-"all external calls use the shared retry decorator", those are compatible: use the decorator,
-configured for three. Reaching for the chain before checking whether there is a real conflict
-produces overrides nobody needed.
+question.** If the solution document says "retry three times" and the repository already has a
+shared retry helper, those are compatible: use the helper, configured for three. Reaching for the
+chain before checking whether there is a real conflict produces overrides nobody needed.
 
 ### Applying it
 
