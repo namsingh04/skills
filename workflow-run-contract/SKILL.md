@@ -1,9 +1,9 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-21"
+updated: "2026-08-25"
 ---
 
 # Workflow run contract
@@ -55,7 +55,10 @@ what you accept.
 ## Where things are
 
 The run root is the directory **above** your working directory. Your working directory is
-usually the repository checkout, so the run root is normally `..`.
+usually the repository checkout, so the run root is normally `..`. **But do not rely on that
+guess.** The run root's ABSOLUTE path is written in `_run/run-config.json` as `runRoot`, and its
+`workflow_output` as `outputRoot`; every output path you are handed is already absolute. Use the
+absolute path — never a relative one.
 
 ```
 <run root>/workflow_output/
@@ -81,9 +84,12 @@ a suffix. Every time an agent has derived its own output path, the file landed i
 checkout under a name nobody was looking for, and the stage that needed it reported the input
 as missing.
 
-`workflow_output` lives **above** the checkout and never inside it. If you find yourself
-writing to `src/workflow_output/…`, you have resolved a relative path against the wrong
-directory.
+`workflow_output` lives **above** the checkout and never inside it — it is always a SIBLING of
+the `src` checkout, at the run root. **NEVER write a relative `workflow_output`, and NEVER a path
+inside the `src` checkout.** If you ever find yourself writing to `src/workflow_output/…`, you have
+resolved a relative path against the wrong directory: use the absolute `outputRoot` from
+`_run/run-config.json` (or the absolute path you were handed) instead. The only thing that belongs
+inside `src` is the code this run must commit.
 
 Raw command output, long transcripts and tool dumps go in `logs/<stage>/`. Keep the envelope
 small enough to read.
@@ -98,7 +104,7 @@ present and empty, not absent.
   "schemaVersion": "1.0",
   "stage": "analysis.functional",
   "agent": "FunctionalRequirementAgent",
-  "runId": "", "branch": "", "mode": "create|resume|amend",
+  "runId": "", "branch": "<git -C <checkout> rev-parse --abbrev-ref HEAD>", "mode": "<the `mode` in _run/run-config.json>",
   "status": "OK|PARTIAL|BLOCKED|SKIPPED",
   "upstreamStatus": "",
   "nextAction": "CONTINUE|SKIP_DOWNSTREAM|RETRY|HUMAN_INPUT",
@@ -118,20 +124,27 @@ present and empty, not absent.
 Your stage-specific content goes in `payload` and nowhere else. Everything outside `payload`
 means the same thing for every agent, which is what lets scripts read all of them.
 
-`branch` is always what git reports right now -- never a name you read out of another file.
+**`mode` is the value of `mode` in `_run/run-config.json` — read it from there.** It is one of
+`create`, `resume`, `amend`. NEVER emit the literal string `create|resume|amend` (that is a schema
+legend, not a value), and never guess `amend`. On 2026-08-25 thirty outputs on a `create` run
+carried the placeholder or a guessed `amend` because they never read the config.
 
-**Run git inside the CHECKOUT, not the run root.** `workflow_output` is not a git repository, so
-`git rev-parse` from there fails and you will record a non-answer. On 2026-08-20 five agents in
-one run wrote five different values for the same branch -- `unknown`, `HEAD`, `no-git`, an empty
-string, and the real name -- purely from where each happened to be standing.
+`branch` is the LIVE branch git reports for the CHECKOUT right now — a resumed run is on a freshly
+cut branch, so a name read from a restored file would be wrong.
+
+**Run git inside the CHECKOUT, with an ABSOLUTE path.** `workflow_output` is not a git repository,
+so bare `git rev-parse` from there returns nothing and you record `no-git` or an empty string
+(18 + 16 outputs did exactly that on 2026-08-25). The checkout is `<run root>/src`, where the run
+root's absolute path is `runRoot` in `_run/run-config.json` (or the absolute path you were handed):
 
 ```
-git -C <checkout> rev-parse --abbrev-ref HEAD
+git -C <run root>/src rev-parse --abbrev-ref HEAD
 ```
 
-The checkout is the directory holding `.git`, one level below the run root; from
-`workflow_output` it is `../src`. Name it explicitly with `-C` rather than trusting your
-working directory. And if git still gives you nothing, record the failure in `warnings` --
+Name the checkout explicitly with `-C`; never trust your working directory, never run bare `git`.
+**Never record `no-git` or an empty branch** — if `git -C` still returns nothing, fall back to the
+`branch` in `_run/run-config.json` and record a warning; otherwise record the failure in `warnings`
+--
 never a placeholder like `unknown` that reads downstream as if it were a branch name.
 
 **Your final answer is this JSON object** — raw, unfenced, starting with `{`, as the top of
