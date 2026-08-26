@@ -1,7 +1,7 @@
 ---
 name: "language-toolchain-detection"
 description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
-version: 2
+version: 3
 created: "2026-08-20"
 updated: "2026-08-21"
 ---
@@ -141,6 +141,17 @@ ecosystem already uses — Python `pytest --cov --cov-report=term-missing` (rege
 row), Node/jest `--coverage --coverageReporters=text` (the `All files` row), Go `go test -cover`
 (`coverage: NN.N% of statements`). A language with no clean built-in recipe records no coverage
 command; coverage is then reported as null, never a failure.
+
+## A standards profile can add required checks
+
+If `00-inputs/Standards-Profile.json` is present, read its `requiredCommands`. A standards document
+that mandates a lint, a type check or a coverage floor is naming a validation gate, so fold those
+commands into the profile's `commands` (and `coverageRegex` / coverage floor) with `evidence` that
+says "required by Standards-Profile.json rule STD-0xx". Two caveats: the command must actually be
+runnable in the repo's toolchain (a mandated `ruff` needs `ruff` installed or declared — if it is
+not, record it under `evidence` as required-but-unavailable rather than inventing an invocation),
+and a standards check never *replaces* a check the repository already runs, it only adds. When the
+file is absent this section is a no-op and detection is exactly as above.
 
 ## A monorepo has no manifest at its root
 

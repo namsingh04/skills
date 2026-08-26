@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 5
+version: 6
 created: "2026-08-20"
 updated: "2026-08-26"
 ---
@@ -45,6 +45,17 @@ Concretely, imitate:
 - **Comment density and style.** A codebase with no comments does not want yours; one that
   documents every public function wants that too. This is the tell reviewers notice first.
 - **Imports and layout** — ordering, grouping, absolute versus relative.
+
+## A standards profile, when present, outranks the repository
+
+If `00-inputs/Standards-Profile.json` exists, read it first. Its `mandatory` rules are binding and
+**override the repository's own conventions** where they conflict — the authority chain is
+`solution doc > jira > standards > repository`, and the repository is the lowest. `advisory` rules
+are preferences: follow them unless the repository clearly does otherwise. A standard that the spec
+already recorded as overridden by the solution doc or jira is settled upstream — follow the spec's
+resolution, do not re-litigate it. Run the profile's `requiredCommands` (lint, coverage, type-check)
+as part of "done". Any rule you break is a recorded `deviation` with its id. When the file is absent,
+nothing here applies and the repository is the standard as usual.
 
 ## Reuse is not optional
 

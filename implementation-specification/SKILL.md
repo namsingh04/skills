@@ -1,7 +1,7 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 4
+version: 5
 created: "2026-08-20"
 updated: "2026-08-26"
 ---
@@ -160,6 +160,14 @@ property files or manifests, each of those is its own `create` entry with a `pur
 only writes what the fileMap names; a file the map omits ships as an empty directory and fails the
 existence gate. Mirror the reference project's structure completely, not just its `.py` files —
 `Repo-Profile.json` `projectSkeleton` is the checklist for what "complete" means here.
+
+**When `00-inputs/Standards-Profile.json` is present, it is an authoritative standards source.**
+Apply the authority chain **solution doc > jira > standards > repository**: a `mandatory` rule in the
+standards profile overrides the repository's own convention, but a rule that contradicts the solution
+design or a Jira acceptance criterion **loses** — record that as a gap, never silently apply it. Fold
+the surviving mandatory rules into `units`, `fileMap` and `constraintsObserved` (cite the rule id,
+e.g. `STD-012`); a mandatory rule you cannot specify a way to meet is itself a gap. When the file is
+absent, the repository is the standard exactly as before — this whole paragraph is a no-op.
 
 `assumptions` records every default you proceeded on. Each one should have a gap id, and each
 one appears in the run summary — this is how a reviewer finds the decisions nobody made.
