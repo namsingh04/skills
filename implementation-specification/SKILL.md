@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-08-24"
+updated: "2026-08-26"
 ---
 
 # Implementation specification
@@ -152,6 +152,14 @@ Write `20-spec/Implementation-Spec.json`. In `payload`:
 `fileMap` marks `create` versus `modify` explicitly. A code agent that modifies a file it
 believed it was creating overwrites work, and that failure is not recoverable from within the
 run.
+
+**The `fileMap` must list EVERY file the finished project needs — not only the behavioural
+modules.** When the repository (or a reference project the solution names) carries deployment
+descriptors (`setup/<env>_setup.json`, one entry per environment), event samples (`events/…`),
+property files or manifests, each of those is its own `create` entry with a `purpose`. A code agent
+only writes what the fileMap names; a file the map omits ships as an empty directory and fails the
+existence gate. Mirror the reference project's structure completely, not just its `.py` files —
+`Repo-Profile.json` `projectSkeleton` is the checklist for what "complete" means here.
 
 `assumptions` records every default you proceeded on. Each one should have a gap id, and each
 one appears in the run summary — this is how a reviewer finds the decisions nobody made.
