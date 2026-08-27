@@ -1,9 +1,9 @@
 ---
 name: "authority-chain-and-gap-detection"
-description: "The precedence order between solution document, Jira and repository (the repository is the standard), and the rules for what counts as a genuine design gap versus a value that is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
-version: 2
+description: "The precedence order between solution document, standards, Jira and repository (solution > standards > jira > repository), and the rules for what counts as a genuine design gap versus something that can be read from the reference/repo or is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
+version: 3
 created: "2026-08-20"
-updated: "2026-08-21"
+updated: "2026-08-27"
 ---
 
 # Authority chain and gap detection
@@ -11,13 +11,17 @@ updated: "2026-08-21"
 ## The chain
 
 ```
-solution document  >  jira  >  repository
+solution document  >  standards  >  jira  >  repository
 ```
 
-Higher wins. There is no separate standards document — **the repository is the standard.** Its
-conventions, naming, layout and project skeleton (recorded in `Repo-Profile.json`) are what the
-generated code must conform to. Two refinements that the bare ordering does not capture, and both
-matter:
+Higher wins. **`standards`** is `00-inputs/Standards-Profile.json` when a standards document was
+supplied for the run; it sits below the solution document and above jira. When no standards document
+was supplied the level is simply absent and the chain reads `solution > jira > repository` — so this
+ordering is a no-op on a run without one. The **repository** is the lowest authority but the only
+source that is *demonstrably real*: its conventions, naming, layout and project skeleton (recorded in
+`Repo-Profile.json`, including the named reference project's structure) are what generated code
+conforms to unless a higher level overrides. Two refinements that the bare ordering does not capture,
+and both matter:
 
 **The solution document is authority for *what to build*. Jira acceptance criteria are
 authority for *what "done" means*.** They are not competing on the same question. Where the
@@ -64,7 +68,14 @@ a reviewer. Raising them fills the review file with things nobody can answer, an
 who has to skim forty of those will miss the three that matter.
 
 **Not a gap: something you could determine by reading.** If the answer is in a file you have
-not opened, open it. A gap that a `read_file` would have closed wastes a review round-trip.
+not opened, open it. A gap that a `read_file` would have closed wastes a review round-trip. This
+explicitly includes the **reference project** and `Repo-Profile.json`: when the solution names a
+reference to model on, anything it already implements — the auth/token flow, configuration and
+secret retrieval, retry, a resource it already touches — is available to READ and REUSE, not a
+question for a reviewer. Walk the chain for the answer (solution → standards → jira → reference/
+repository) before raising a `MISSING` gap; raise it only for what is genuinely absent from every
+level. Re-implementing, or gapping, something the reference already provides is the most common
+avoidable failure here.
 
 **Not a gap: a decision the specification stage exists to make.** Which module a function
 belongs in, what to name a class, how to structure the tests. That is design, not ambiguity.

@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-08-26"
+updated: "2026-08-27"
 ---
 
 # Implementation specification
@@ -154,20 +154,22 @@ believed it was creating overwrites work, and that failure is not recoverable fr
 run.
 
 **The `fileMap` must list EVERY file the finished project needs — not only the behavioural
-modules.** When the repository (or a reference project the solution names) carries deployment
-descriptors (`setup/<env>_setup.json`, one entry per environment), event samples (`events/…`),
-property files or manifests, each of those is its own `create` entry with a `purpose`. A code agent
-only writes what the fileMap names; a file the map omits ships as an empty directory and fails the
-existence gate. Mirror the reference project's structure completely, not just its `.py` files —
-`Repo-Profile.json` `projectSkeleton` is the checklist for what "complete" means here.
+modules.** `Repo-Profile.json` `projectSkeleton` is the checklist, and when the solution names a
+reference project the skeleton is that reference's COMPLETE inventory. Every `requiredDir` and
+`requiredFile` it records — one entry per environment where the reference has per-environment config,
+every descriptor/sample directory, every manifest, every helper the reference carries — becomes its
+own `create` entry with a `purpose`. A code agent only writes what the fileMap names; a file the map
+omits ships as an empty directory and fails the existence gate; per-environment files collapsed into
+one, or a dir the reference has left empty, are the same failure. Take the exact set from the
+profile — name no file from assumption. Do NOT add files the reference does not have.
 
 **When `00-inputs/Standards-Profile.json` is present, it is an authoritative standards source.**
-Apply the authority chain **solution doc > jira > standards > repository**: a `mandatory` rule in the
-standards profile overrides the repository's own convention, but a rule that contradicts the solution
-design or a Jira acceptance criterion **loses** — record that as a gap, never silently apply it. Fold
-the surviving mandatory rules into `units`, `fileMap` and `constraintsObserved` (cite the rule id,
-e.g. `STD-012`); a mandatory rule you cannot specify a way to meet is itself a gap. When the file is
-absent, the repository is the standard exactly as before — this whole paragraph is a no-op.
+Apply the authority chain **solution doc > standards > jira > repository**: a `mandatory` rule in the
+standards profile overrides jira and the repository's own convention, but a rule that contradicts the
+solution design **loses** — record that as a gap, never silently apply it. Fold the surviving
+mandatory rules into `units`, `fileMap` and `constraintsObserved` (cite the rule id); a mandatory
+rule you cannot specify a way to meet is itself a gap. When the file is absent, the repository is the
+standard exactly as before — this whole paragraph is a no-op.
 
 `assumptions` records every default you proceeded on. Each one should have a gap id, and each
 one appears in the run summary — this is how a reviewer finds the decisions nobody made.

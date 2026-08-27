@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
-description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. Use when analysing the target repository before generating code into it."
-version: 4
+description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
+version: 5
 created: "2026-08-20"
-updated: "2026-08-24"
+updated: "2026-08-27"
 ---
 
 # Repository discovery
@@ -129,6 +129,25 @@ later stages and the pre-commit gate enforce, in ANY language, without hard-codi
   not project-specific modules. Two siblings sharing a file makes it a convention; one does not.
 - Omit the whole `projectSkeleton` when there is no sibling to model on (a single-project repo,
   or a genuinely empty one). An absent skeleton asserts nothing; a wrong one blocks a good run.
+
+### A named reference project outranks the nearest sibling
+
+Read `00-inputs/Solution-Model.json` first. If it names a REFERENCE project to model on — phrasing
+like "modelled on", "follow its conventions", "open that project first and follow it rather than
+inventing" — then **that named project is the one to profile, and it is authoritative over a
+merely-similar sibling.** The author pointed at it deliberately; the new project is meant to mirror
+it.
+
+For a named reference, **open it and record its COMPLETE inventory** — every directory and every
+file it actually contains, at their real repo-relative paths, with a path as evidence — into
+`requiredDirs` and `requiredFiles`. Do NOT reduce it to "manifest + entry point": whatever the
+reference carries (per-environment config files, deployment/descriptor directories, sample/event
+directories, auth or secret-handling modules, and so on) is part of the structure the new project
+must reproduce, so capture ALL of it. Also record, with evidence, HOW the reference solves the
+recurring problems the spec will need — configuration/secret retrieval, external-call auth, retry,
+logging — so a downstream gap for any of those can be answered from the reference instead of raised.
+Name no specific folder, file, environment, or library here: enumerate exactly what the reference
+has on disk, nothing assumed.
 
 ## Structure mismatch is a finding, not a failure
 

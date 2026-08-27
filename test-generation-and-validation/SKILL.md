@@ -1,9 +1,9 @@
 ---
 name: "test-generation-and-validation"
 description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-08-24"
+updated: "2026-08-27"
 ---
 
 # Test generation and validation
@@ -54,6 +54,14 @@ coverage is, and where real defects hide. Do NOT reach it the wrong way — a te
 raise the number, asserting nothing an obligation requires, makes the suite slower without making
 it stronger. Every test still traces to a fixture or an acceptance criterion; the 85% is a floor
 those honest tests must clear, not a target to game.
+
+The coverage that gets skipped, and drags the total below the floor, is almost always the
+**infrastructure modules** — configuration and secret retrieval, auth/token acquisition, retry
+wrappers, HTTP/client adapters. They feel like plumbing, so they get one happy-path test or none, and
+the total lands in the 70s. Cover them: mock the external dependency (the SDK client, the HTTP call,
+the parameter store) and assert the success path, the retry/backoff path, and each error branch.
+These modules are exactly where a production incident starts, so the coverage there is the coverage
+that matters most — not an afterthought once the behavioural units are done.
 
 ## Never edit the implementation to make a test pass
 

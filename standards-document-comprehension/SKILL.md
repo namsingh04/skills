@@ -1,9 +1,9 @@
 ---
 name: "standards-document-comprehension"
 description: "Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-27"
 ---
 
 # Standards document comprehension
@@ -82,12 +82,16 @@ naming a validation gate, and the validation stage will run it.
 
 ## Where standards sit in the authority chain
 
-`solution document > jira > standards > repository`.
+`solution document > standards > jira > repository`.
 
 So:
 
-- A standard that **contradicts the solution design or an acceptance criterion** loses. Record
-  the conflict as a gap and note which rule was overridden — do not silently drop the rule.
+- A standard that **contradicts the solution design** loses (the solution document is above
+  standards). Record the conflict as a gap and note which rule was overridden — do not silently
+  drop the rule.
+- A standard that **contradicts a jira acceptance criterion** wins (standards sit above jira), but
+  record the conflict as a gap: an AC that a mandatory standard overrides is a decision a human
+  should see, not discover.
 - A standard that **contradicts the repository** wins, but this is worth a gap too: an
   existing codebase that consistently violates its own standard is usually evidence the
   standard changed, and generating code in the new style next to a hundred files in the old

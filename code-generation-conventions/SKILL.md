@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 6
+version: 7
 created: "2026-08-20"
-updated: "2026-08-26"
+updated: "2026-08-27"
 ---
 
 # Code generation conventions
@@ -50,9 +50,9 @@ Concretely, imitate:
 
 If `00-inputs/Standards-Profile.json` exists, read it first. Its `mandatory` rules are binding and
 **override the repository's own conventions** where they conflict — the authority chain is
-`solution doc > jira > standards > repository`, and the repository is the lowest. `advisory` rules
+`solution doc > standards > jira > repository`, and the repository is the lowest. `advisory` rules
 are preferences: follow them unless the repository clearly does otherwise. A standard that the spec
-already recorded as overridden by the solution doc or jira is settled upstream — follow the spec's
+already recorded as overridden by the solution doc upstream is settled — follow the spec's
 resolution, do not re-litigate it. Run the profile's `requiredCommands` (lint, coverage, type-check)
 as part of "done". Any rule you break is a recorded `deviation` with its id. When the file is absent,
 nothing here applies and the repository is the standard as usual.
@@ -76,6 +76,16 @@ layout, the naming, the config-indirection, the error handling — and write the
 spec defines. Genuinely shared code is imported, never duplicated; but in a repo of self-contained
 projects, reproduce the per-project helpers the convention calls for freshly, and test them to this
 project's coverage floor rather than assuming the reference already did.
+
+Two different things, and keep them apart: **reproduce the reference's STRUCTURE exactly; author the
+CODE fresh.** The structure — the directory layout captured in `Repo-Profile.json` `projectSkeleton`,
+one config file per environment where the reference has per-environment config, every descriptor and
+sample directory it carries, and NO files it does not have (no invented modules, no extra package
+markers) — is copied faithfully, because a reviewer expects this project to sit next to the reference
+and look like it. The bodies inside those files are written for THIS spec. Collapsing several
+per-environment files into one, or scattering the layout across a different shape, is as wrong as
+cloning the logic — both make the project fail to match the reference it was told to follow. Name no
+specific folder or file from your own knowledge; take the exact set from the profile.
 
 ## No placeholders
 

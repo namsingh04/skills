@@ -1,9 +1,9 @@
 ---
 name: "language-toolchain-detection"
 description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-08-21"
+updated: "2026-08-27"
 ---
 
 # Language and toolchain detection
@@ -69,9 +69,18 @@ This is the profile that gets exercised first, so get it right:
   dependency looks exactly like broken generated code.
 - Test runner: `pytest` unless `unittest` is evidently in use. Check `pytest.ini`,
   `tool.pytest.ini_options`, `tox.ini`, and the shape of the existing tests.
-- Lint and types: `ruff`, `flake8`, `pylint`, `mypy`, `pyright` — only if the repository
-  configures them. Do not add a check the project does not run; a lint failure on code the
-  project never linted is noise that costs a retry.
+- **When commands run bare** (a `pip install -r requirements.txt` / plain-`pyproject` project with
+  no `poetry run` / `uv run` prefix), invoke every tool in **module form** — `python -m pytest`,
+  `python -m pytest --cov=…`, `python -m ruff`, `python -m mypy` — NOT the bare console script
+  (`pytest`, `ruff`). A console script is only on `PATH` when the package manager put it there;
+  `python -m <tool>` works whenever the tool is importable, which is what Run Validation actually
+  has. Bare `pytest` "command not found" is a false FAIL on code that runs fine under `python -m`.
+- Lint and types: `ruff`, `flake8`, `pylint`, `mypy`, `pyright` — record a `lint`/`typecheck`
+  command **only when the tool is both configured AND actually installed** (importable in the
+  environment Run Validation uses). A tool the repo configures but the environment does not have must
+  NOT be recorded: Run Validation would execute a missing binary and report FAIL where the check
+  should be SKIPPED. If you cannot confirm it is installed, leave the command `null` and say so in
+  `warnings`. A lint failure on code the project never linted is noise that costs a retry.
 - Python usually has **no build step**. Record `build: null` with the reason. Reporting a
   missing build as a failure sends the fixer after a problem that does not exist.
 
