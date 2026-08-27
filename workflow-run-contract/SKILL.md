@@ -1,9 +1,9 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-08-25"
+updated: "2026-08-27"
 ---
 
 # Workflow run contract
@@ -90,6 +90,20 @@ inside the `src` checkout.** If you ever find yourself writing to `src/workflow_
 resolved a relative path against the wrong directory: use the absolute `outputRoot` from
 `_run/run-config.json` (or the absolute path you were handed) instead. The only thing that belongs
 inside `src` is the code this run must commit.
+
+**Your runtime may tell you to keep newly created files inside `src/`.** That instruction is about
+the repository CODE you generate for the commit. It does NOT apply to your stage-output envelope: that
+ALWAYS goes to `<outputRoot>/<stage>/<file>` — a sibling of `src`, never inside it. When the two
+seem to conflict, this contract wins for stage outputs.
+
+**If the path you were handed still contains a placeholder — `<path>`, `<proven dir>`, `{…}`, or any
+`<…>` token — it was not filled in for you.** Do NOT write to the literal token, and do NOT fall back
+to `src`. Build the path yourself: take `outputRoot` from `_run/run-config.json`, add your stage
+folder, add your exact filename. An unresolved token is the single most common reason an output lands
+where the next stage cannot find it.
+
+**Keep the stage folder a real directory.** Write `00-inputs/Solution-Model.json`, never a flattened
+`00-inputs-Solution-Model.json`; the `/` is a directory separator, not part of the name.
 
 Raw command output, long transcripts and tool dumps go in `logs/<stage>/`. Keep the envelope
 small enough to read.
