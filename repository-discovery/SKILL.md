@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 7
+version: 8
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -212,6 +212,24 @@ e.g. `<top>/<name>/<name>/`). Getting it right is what prevents a generator from
 the repo does not have.
 
 `notInspected` keeps you honest. Sampling is correct; pretending you read everything is not.
+
+## Verify before you return
+
+Silent omission of the skeleton is the recurring failure of this stage: the agent profiles the
+reference or the siblings in prose, then returns `projectSkeleton` with empty `requiredDirs` and
+`requiredFiles`, and every later stage loses the layout. Before you write the file, run this check on
+your own output:
+
+1. Did `00-inputs/Solution-Model.json` name a REFERENCE project, OR does the repo hold siblings that
+   share a layout? If **yes**, `projectSkeleton.requiredDirs` and `projectSkeleton.requiredFiles`
+   **must be non-empty**, each entry a real repo-relative path you listed, with `evidence`. Empty
+   fields here are not an acceptable return — go back and enumerate them from the listing you already
+   ran.
+2. Emitting `projectSkeleton` with empty `requiredDirs`/`requiredFiles` is allowed **only** when you
+   also raise a gap stating there was neither a named reference nor a sibling to model on. No such
+   gap and empty fields is a defect, not a profile.
+3. Re-read the file and confirm it parses, carries the envelope, and that the skeleton you just
+   verified is actually in `payload` — not lost between your reasoning and the written bytes.
 
 ## What you must not do
 

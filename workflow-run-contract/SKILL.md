@@ -1,9 +1,9 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Workflow run contract
@@ -289,9 +289,32 @@ Every requirement you act on, and every artifact you produce, gets an entry:
 This is assembled into a matrix that gets committed with the code. An entry you cannot
 support with a source reference should not be written.
 
+## How to write the file
+
+`write_file` takes exactly `{ "path": <string>, "content": <string> }`. **`content` is your file's
+FULL TEXT as a single STRING** — if the file is JSON, serialise your envelope to a string first (the
+characters `{`, `"`, `}` and so on, as text). **Never pass a JSON object, an array, or a nested
+structure as `content`** — the tool rejects it with `Error: Invalid input format. Expected an object
+with properties 'path' (string) and 'content' (string)`, and retrying the same way loops forever. A
+large envelope once looped a whole stage this way (2026-08-31: BusinessLogic.json, 5 failed writes,
+15 min, no output).
+
+**If `write_file` returns that error (or any failure), do NOT retry it unchanged.** Write the file
+with `command_line` instead, which is immune to the tool's shape and size limits — a single-quoted
+heredoc to the ABSOLUTE path you were given:
+
+```bash
+cat > '/abs/path/you/were/given/File.json' <<'ENVELOPE_EOF'
+{ ...your full envelope as text... }
+ENVELOPE_EOF
+```
+
+Then list the file to confirm it exists and is non-empty. Either path is fine; the point is that the
+file lands, once, with your real content.
+
 ## Verify before you return
 
-1. `write_file` succeeded, then **list the file** and confirm it is there and non-empty.
+1. `write_file` succeeded (or the `command_line` fallback did), then **list the file** and confirm it is there and non-empty.
 2. Re-read it and confirm it parses as JSON.
 3. **Confirm it is the ENVELOPE, not a bare payload.** `stage`, `agent`, `status`,
    `outputPath` and `payload` must be at the TOP level, with your content inside `payload`.
