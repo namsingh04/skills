@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 6
+version: 7
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -141,7 +141,12 @@ it.
 
 For a named reference, **open it and record its COMPLETE inventory** — every directory and every
 file it actually contains, at their real repo-relative paths, with a path as evidence — into
-`requiredDirs` and `requiredFiles`. Do NOT reduce it to "manifest + entry point": whatever the
+`requiredDirs` and `requiredFiles`. **"Complete" is scoped to the reference project's OWN directory:
+run ONE bounded listing of that folder (`find <reference-project-dir>` or
+`git ls-files <reference-project-dir>`) plus the target location — NEVER a repo-wide walk, and NEVER
+sibling projects.** You need the reference's own tree and where the new project goes, nothing else;
+scanning the other projects in a large monorepo is what times a run out (a 54-project repo was walked
+in full on 2026-08-31). Do NOT reduce it to "manifest + entry point": whatever the
 reference carries (per-environment config files, deployment/descriptor directories, sample/event
 directories, auth or secret-handling modules, and so on) is part of the structure the new project
 must reproduce, so capture ALL of it. Also record, with evidence, HOW the reference solves the
