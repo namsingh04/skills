@@ -1,9 +1,9 @@
 ---
 name: "output-validation"
 description: "How a stage validator behaves - read artifacts from their paths, check structure and consistency rather than taste, and return PASS or FAIL with the failed component named and a reason specific enough to retry against. For every validation gate agent."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Output validation
@@ -43,6 +43,17 @@ PRESENT, never that nothing else appears and never that `PARTIAL` is forbidden.
 **Completeness.** Does the payload contain the keys this stage is responsible for producing?
 An empty array where content was expected is a finding; an empty array that legitimately
 means "none" is not, and you must be able to tell which by reading the stage's own contract.
+
+One completeness check earns its own line because it has silently broken whole runs: on the
+analysis stage's `Repo-Profile.json`, **an empty `projectSkeleton` (blank `layout`, empty
+`requiredDirs`/`requiredFiles`) is a FAIL whenever the profile itself shows the target sits among
+sibling projects that share a layout, or the solution model names a reference project** — because
+`repository-discovery` makes the skeleton mandatory in that case, and the spec stage builds its
+`fileMap` from it. Tell the two situations apart by reading the profile: if its `layout` lists
+sibling project directories (or `isEmpty` is false and there is more than one project), the skeleton
+must be populated. Empty-with-no-gap is the failure; empty accompanied by a gap explaining there was
+no sibling or reference is the legitimate "none". FAIL to `RepositoryDiscoveryAgent` with a
+`retryReason` naming the sibling it must model on.
 
 **Internal consistency.** Do the pieces agree with each other? A summary count that
 disagrees with the array it summarises. A path referenced in one file that no other file

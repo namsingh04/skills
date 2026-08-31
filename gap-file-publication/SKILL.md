@@ -1,9 +1,9 @@
 ---
 name: "gap-file-publication"
 description: "Assemble the design gaps raised across every stage into one reviewable file, deduplicated, ordered by what actually blocks progress, and decide whether a human needs to see it at all. Use by the gap presenter and the gap decision agents."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-31"
 ---
 
 # Gap file publication
@@ -40,9 +40,14 @@ of the two the reviewer meant.
 
 Drop, and record in `filtered` with the reason:
 
-- **Deployment-time unknowns** — account ids, bucket names, endpoints, ARNs, secret
-  references. These are validated configuration inputs, not design gaps. They belong in
-  `Infrastructure.json`'s `configurationInputs`.
+- **Deployment-time unknowns that are simply not known yet** — account ids, bucket names,
+  endpoints, ARNs, secret references that WILL be supplied by configuration at deploy time and
+  have a clear home. These are validated configuration inputs, not design gaps. They belong in
+  `Infrastructure.json`'s `configurationInputs`. **But do not drop a value that is genuinely
+  ABSENT or UNCONFIRMED for an environment the run must target and whose absence blocks
+  deployment or correctness** — e.g. network IDs missing for some of the required environments,
+  a permission the role does not yet have, an egress path nobody has confirmed. That is a
+  reviewer's question: keep it (see the flag rule below), do not file it away as routine config.
 - **Anything answerable by reading** a file in the repository or a document already fetched.
 - **Design decisions the specification stage owns** — module placement, naming, test
   structure.
@@ -86,6 +91,25 @@ Write `30-gaps/Gaps-For-Review.json`:
 
 `resolution` is always empty. You never answer your own gaps — including the ones where you
 are confident, because a confident answer recorded as a human decision is a fabrication.
+
+**Set the review flags yourself — do not merely inherit them.** A gap that survived filtering is,
+by definition, one where a wrong guess produces code that has to be thrown away, so it needs an
+answer. On every gap you publish:
+
+- Set **`requiresHumanInput: true`** when the gap is `HIGH` severity, OR is a `MISSING` /
+  `UNCONFIRMED` value the reviewer must supply before the code is correct or deployable (the
+  absent network IDs, the unconfirmed role permission, the egress question above). These are
+  exactly the gaps that must open the review gate.
+- Set **`blocksCodeGeneration: true`** additionally when the code literally cannot be written
+  correctly without the answer (a contradiction in the contract, an undecided delivery guarantee).
+  A value that only blocks *deployment* needs `requiresHumanInput`, not necessarily this.
+- The raisers often leave both flags unset; that is not permission to publish an unflagged HIGH
+  gap. If you kept it, flag it.
+
+**`summary` must agree with the array.** Count `blocking` as the number of entries with
+`blocksCodeGeneration: true`, and make sure at least the `requiresHumanInput` entries are visible in
+the summary too. A file with HIGH gaps and `blocking: 0` and no `requiresHumanInput` is the exact
+shape that silently skips the gate — never emit it.
 
 ## The decision: does a human need to see this?
 

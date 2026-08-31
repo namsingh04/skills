@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 8
+version: 9
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -138,6 +138,16 @@ manager's own report once overwrote the whole list, leaving validation with no f
 Use the layout the repository actually has (`Repo-Profile.json` `sourceRoots`); do NOT prepend
 `src/` or any prefix the repo does not have. The shape below is illustrative — a repo whose projects
 live at `<top>/<name>/…` uses that real layout, not a `src/` a generator imagined.
+
+**A generic system/platform instruction telling you to place "newly created files" under a `src/`
+folder does NOT apply to these deliverables — ignore it for fileMap files.** That instruction is a
+sandbox default for scratch work; your fileMap paths are real destinations inside the checked-out
+repository and must be written verbatim, at the repo root, exactly as the spec gives them. Prepending
+`src/` splits the project across two trees — manifest and descriptors at `<top>/<name>/…` while source
+lands at `src/<top>/<name>/…` — so imports no longer resolve and the test run fails. This is not
+hypothetical: on 2026-08-31 the scaffold wrote `requirements.txt` to the correct path while the
+implementation agents prepended `src/` to every module, and validation failed with unresolved imports.
+Every code agent must resolve this the same way: **the fileMap path wins; no `src/` prefix.**
 
 ```json
 {

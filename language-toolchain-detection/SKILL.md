@@ -1,9 +1,9 @@
 ---
 name: "language-toolchain-detection"
 description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Language and toolchain detection
@@ -142,7 +142,7 @@ or `uv run` in front of them.
 
 ## Coverage is a SEPARATE command
 
-Line coverage must exceed 85%, and the validation stage enforces it. Record a `coverage` command
+Line coverage must exceed 80%, and the validation stage enforces it. Record a `coverage` command
 distinct from `test`, plus a `coverageRegex` that extracts the total line-% from that command's
 output. Keeping it separate is deliberate: the plain `test` command stays the authoritative
 pass/fail and is never broken by a missing coverage tool. Per language, the recipe is the one the

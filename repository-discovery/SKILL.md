@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 8
+version: 9
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -163,6 +163,26 @@ entry per file, so a reference with N per-environment config files yields N entr
 one-to-one; a skeleton that is absent, or that collapses per-environment files into one, is exactly
 why a run ships a single environment's config files instead of every environment's. If you described
 the reference but left `requiredDirs`/`requiredFiles` empty, you have not finished the task.
+
+**You already ran the listing — now RECORD it. The `find`/`git ls-files` output you just read IS the
+skeleton;** transcribe those exact paths into `requiredDirs`/`requiredFiles`. Leaving the field empty
+after you have seen the tree is the recurring, run-breaking failure (2026-08-31: the sibling tree,
+`setup/` dirs and `template.yaml` were all listed in the agent's own shell output, yet `projectSkeleton`
+came back blank and the generated project had no `setup/` at all).
+
+**Reproduce the reference's EXACT nesting — including a repeated project-name directory and files that
+sit at a MIDDLE level.** Many monorepos place a project at `<top>/<name>/<name>/` (the name repeats)
+while keeping `template.yaml` and a `setup/` directory one level up at `<top>/<name>/`. Record each
+path at the real depth you observed it: `requiredDirs` gets both `<top>/<name>/setup/` and the code
+dir `<top>/<name>/<name>/…`; `requiredFiles` gets `<top>/<name>/template.yaml`,
+`<top>/<name>/setup/<env>_setup.json` (one per environment), and every file inside the doubled code
+dir. Do not flatten the two levels into one and do not drop the repeated segment — the spec and the
+validation both key off these exact paths. Hardcode no name; copy the shape you saw.
+
+**A CREATE run — where the new project does not exist on disk yet — is precisely when this is
+mandatory, not when it is excused.** You model `layout` on the nearest sibling's real path (with the
+new project's name substituted) and set `modelledOn` to that sibling. "The new folder isn't there yet"
+is never a reason to leave the skeleton empty; the sibling is there, and it is the answer.
 
 ## Structure mismatch is a finding, not a failure
 

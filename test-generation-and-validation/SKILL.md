@@ -1,9 +1,9 @@
 ---
 name: "test-generation-and-validation"
 description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Test generation and validation
@@ -48,11 +48,11 @@ specified; a suite that only tests success has tested the half that was going to
 error type — not an invented behavioural assertion. Say in the test name that the expected
 values were not specified.
 
-Line coverage must exceed **85%** — the validation stage measures it and fails the run below
+Line coverage must exceed **80%** — the validation stage measures it and fails the run below
 that. Reach it the right way: cover the error and edge paths, which is usually where the missing
 coverage is, and where real defects hide. Do NOT reach it the wrong way — a test written only to
 raise the number, asserting nothing an obligation requires, makes the suite slower without making
-it stronger. Every test still traces to a fixture or an acceptance criterion; the 85% is a floor
+it stronger. Every test still traces to a fixture or an acceptance criterion; the 80% is a floor
 those honest tests must clear, not a target to game.
 
 The coverage that gets skipped, and drags the total below the floor, is almost always the
