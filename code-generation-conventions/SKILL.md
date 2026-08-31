@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 7
+version: 8
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Code generation conventions
@@ -87,6 +87,13 @@ per-environment files into one, or scattering the layout across a different shap
 cloning the logic — both make the project fail to match the reference it was told to follow. Name no
 specific folder or file from your own knowledge; take the exact set from the profile.
 
+**Use the reference's OWN directory names — do not invent your own taxonomy.** If the reference
+groups its helpers under one directory, your helpers go in a directory of that same name; do not
+split them into several new fine-grained subdirectories the reference does not have when it keeps
+them together (or vice-versa). The set of directories in your project is the set in the
+`projectSkeleton`, with the same names — no more, no fewer. A tidier structure you prefer is still
+the wrong structure.
+
 ## No placeholders
 
 Never write:
@@ -112,11 +119,12 @@ with your changes integrated.
 `modify` as though it were new overwrites existing work, and nothing in this run can recover
 it.
 
-**Write EVERY file the fileMap marks `create` — code AND config.** Deployment descriptors
-(`setup/<env>_setup.json`), event samples (`events/…`), property files and manifests count: if the
-fileMap or the repo's `projectSkeleton` names it, produce it with real content. Creating an empty
-directory and moving on is not "done" — an empty folder is never committed, and the run fails the
-existence gate. A missing config file breaks a deploy exactly as a missing module breaks an import.
+**Write EVERY file the fileMap marks `create` — code AND config.** Deployment descriptors,
+per-environment config files, sample/fixture files, property/settings files and manifests all count:
+if the fileMap or the repo's `projectSkeleton` names it, produce it with real content. Creating an
+empty directory and moving on is not "done" — an empty folder is never committed, and the run fails
+the existence gate. A missing config file breaks a deploy exactly as a missing module breaks an
+import.
 
 ## Record what you wrote
 

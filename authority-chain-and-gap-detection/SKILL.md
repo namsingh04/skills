@@ -1,9 +1,9 @@
 ---
 name: "authority-chain-and-gap-detection"
 description: "The precedence order between solution document, standards, Jira and repository (solution > standards > jira > repository), and the rules for what counts as a genuine design gap versus something that can be read from the reference/repo or is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Authority chain and gap detection
@@ -76,6 +76,17 @@ question for a reviewer. Walk the chain for the answer (solution → standards �
 repository) before raising a `MISSING` gap; raise it only for what is genuinely absent from every
 level. Re-implementing, or gapping, something the reference already provides is the most common
 avoidable failure here.
+
+**Before you raise ANY gap, SEARCH the Solution-Model for the specific value first.** It is the
+highest authority and routinely carries far more than a first read suggests — configuration values
+and thresholds, retry/backoff and timeout settings, identifiers and resource names, endpoints and
+credentials, access and network details, the list of environments. Look for the noun in the model
+(and in the reference profile) before deciding it is absent — whatever the target language, provider
+or repository. A run once raised ~14 gaps of which only ~2 were genuine intent; the rest were values
+the solution document and the reference already stated. A `MISSING` gap for something the model
+spells out three sections down is precisely the failure this rule prevents. Reserve gaps for what no
+source answers: genuine intent (an allowed set of values, a policy choice) and operational targets
+(SLOs, budgets) that truly appear nowhere.
 
 **Not a gap: a decision the specification stage exists to make.** Which module a function
 belongs in, what to name a class, how to structure the tests. That is design, not ambiguity.

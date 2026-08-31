@@ -1,9 +1,9 @@
 ---
 name: "infrastructure-resource-design"
 description: "Turn requirements and the tables that accompany them - IAM policies, VPC and network settings, resource configuration - into a resource specification where every resource, permission and boundary traces to a source row. Use in the specification stage for infrastructure work."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-31"
 ---
 
 # Infrastructure resource design
@@ -65,6 +65,13 @@ what egress, and what is deliberately *not* reachable.
 
 State the negatives. "This function has no internet egress" is a design decision that will be
 silently reversed by whoever adds the next NAT route unless it is written down as intentional.
+
+**Search the Solution-Model and the reference profile BEFORE raising any infra gap.** Network
+placement, access boundaries, identity/role bindings, egress paths and resource identifiers (whatever
+the provider calls them) are almost always stated in the solution's resources/network sections or
+already used by the reference project — read them there and USE them. Raise an infra gap only for a
+value no source names; a gap for a boundary or a role the solution document already lists is a wasted
+review round-trip, not a finding.
 
 ## What you produce
 

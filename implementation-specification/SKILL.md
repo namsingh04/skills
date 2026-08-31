@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 6
+version: 7
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Implementation specification
@@ -162,6 +162,13 @@ own `create` entry with a `purpose`. A code agent only writes what the fileMap n
 omits ships as an empty directory and fails the existence gate; per-environment files collapsed into
 one, or a dir the reference has left empty, are the same failure. Take the exact set from the
 profile — name no file from assumption. Do NOT add files the reference does not have.
+
+**Copy `projectSkeleton.requiredFiles` into `fileMap` ONE-TO-ONE.** If the skeleton lists a
+per-environment config file across four environments, the fileMap has four entries — never one
+"representative" file with the others implied. If the `projectSkeleton` is missing but the solution
+names a reference, do NOT proceed on a single environment: read the reference on disk (or list what
+discovery captured) and enumerate its per-environment files yourself first. One environment's config
+standing in for all of them is a defect, not a simplification.
 
 **When `00-inputs/Standards-Profile.json` is present, it is an authoritative standards source.**
 Apply the authority chain **solution doc > standards > jira > repository**: a `mandatory` rule in the

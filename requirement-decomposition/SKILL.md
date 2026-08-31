@@ -1,9 +1,9 @@
 ---
 name: "requirement-decomposition"
 description: "Separate business, functional, non-functional and technical requirements cleanly, and write each as a discrete testable statement with its source. Use in the analysis stage by the business, functional, non-functional and technical requirement agents."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-31"
 ---
 
 # Requirement decomposition
@@ -91,6 +91,12 @@ Each of these is a number somebody has not written down. Raise a gap asking for 
 the requirement with `measurable: false`, and give a `proposedDefault` where the documents
 support one. Do not supply the number yourself: a latency budget you invented becomes a test
 assertion, and then a production alert.
+
+**But FIRST search the Solution-Model for the number** — retry counts, backoff, timeouts,
+concurrency, retention periods and similar thresholds are frequently stated in the design outright (a
+diagram noting "3 attempts, exponential backoff" IS the answer). Only a value that appears nowhere in
+the solution, standards, jira, or reference is a genuine gap. Reserve gaps for the truly-open
+operational targets (SLOs, budgets) and genuine intent, not for numbers the document already gives.
 
 ## Do not invent, do not merge, do not resolve
 

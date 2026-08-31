@@ -1,9 +1,9 @@
 ---
 name: "integration-contract-design"
 description: "Specify every boundary the system talks over as request shape, response shape, error behaviour and a concrete sample exchange, and emit the test fixtures that make those contracts testable. Use in the specification stage for interfaces and integrations."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-31"
 ---
 
 # Integration contract design
@@ -67,6 +67,12 @@ what the other system actually sends.
 passes, and proves nothing. Where a contract has no sample, raise a `MISSING` gap and mark the
 contract `sampleless: true` so the test author knows to write a structural test rather than a
 behavioural one.
+
+**Before raising a schema/contract gap, check whether the reference project already implements it.**
+When the solution names a reference, its client/boundary code IS the contract shape — the auth flow,
+the request/response shapes, the retry wrapper are all there to READ and reuse. A `MISSING` gap for
+an auth or endpoint schema the reference already speaks to is avoidable; profile it from the
+reference instead.
 
 Cover the error paths with fixtures too, where the document supplies them. A contract with
 five happy-path fixtures and no error fixture will be implemented with no error handling.

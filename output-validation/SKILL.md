@@ -1,9 +1,9 @@
 ---
 name: "output-validation"
 description: "How a stage validator behaves - read artifacts from their paths, check structure and consistency rather than taste, and return PASS or FAIL with the failed component named and a reason specific enough to retry against. For every validation gate agent."
-version: 1
+version: 2
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-08-27"
 ---
 
 # Output validation
@@ -27,6 +27,18 @@ naming the missing artifact.
 
 **Structure.** Does every required file exist, parse, and carry the envelope fields —
 `status`, `stage`, `agent`, `outputPath`, `payload`?
+
+A completed output carries status **`OK` or `PARTIAL`** — BOTH mean the producing agent finished:
+`PARTIAL` is a legitimate completion (it did what it could and recorded gaps), NOT a failure. Only
+`FAIL`, `BLOCKED`, a missing file, or unparseable JSON is incomplete. **Never fail a stage — and
+never send it back for a re-run — because an output's status is `PARTIAL`;** that loops the stage
+against an agent that already did its job (5 re-runs of the analysis stage came from exactly this).
+The `workflow-run-contract` envelope carries MANY top-level fields — not just six: `schemaVersion,
+stage, agent, status, outputPath, payload` **and** `inputs, gaps, traceability, upstreamStatus,
+nextAction, attempt, retryBudget, warnings, errors, metrics`, per the contract. Those are the
+envelope, correctly written; **do NOT reject a file for carrying them.** "Exactly six keys and no
+others", or "status must be OK/FAIL", is a rule you invented — check that the REQUIRED fields are
+PRESENT, never that nothing else appears and never that `PARTIAL` is forbidden.
 
 **Completeness.** Does the payload contain the keys this stage is responsible for producing?
 An empty array where content was expected is a finding; an empty array that legitimately

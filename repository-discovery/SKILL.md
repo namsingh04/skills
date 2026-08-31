@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-08-31"
 ---
 
 # Repository discovery
@@ -127,8 +127,9 @@ later stages and the pre-commit gate enforce, in ANY language, without hard-codi
 
 - `requiredFiles` are the files EVERY sibling has (by basename) — the manifest and entry point,
   not project-specific modules. Two siblings sharing a file makes it a convention; one does not.
-- Omit the whole `projectSkeleton` when there is no sibling to model on (a single-project repo,
-  or a genuinely empty one). An absent skeleton asserts nothing; a wrong one blocks a good run.
+- Omit the whole `projectSkeleton` ONLY when there is neither a named reference NOR a sibling to
+  model on (a single-project repo, or a genuinely empty one). When a reference IS named it is never
+  optional — see below. An absent skeleton asserts nothing; a wrong one blocks a good run.
 
 ### A named reference project outranks the nearest sibling
 
@@ -148,6 +149,15 @@ recurring problems the spec will need — configuration/secret retrieval, extern
 logging — so a downstream gap for any of those can be answered from the reference instead of raised.
 Name no specific folder, file, environment, or library here: enumerate exactly what the reference
 has on disk, nothing assumed.
+
+**Emitting the `projectSkeleton` OBJECT is MANDATORY when a reference is named — it is the single most
+important thing you produce.** Profiling the reference in prose is not enough: you MUST fill
+`requiredDirs` and `requiredFiles` with its actual paths. **List every file individually** — one
+entry per file, so a reference with N per-environment config files yields N entries, NEVER one
+"representative" file with the rest implied. The spec stage builds its `fileMap` by copying this list
+one-to-one; a skeleton that is absent, or that collapses per-environment files into one, is exactly
+why a run ships a single environment's config files instead of every environment's. If you described
+the reference but left `requiredDirs`/`requiredFiles` empty, you have not finished the task.
 
 ## Structure mismatch is a finding, not a failure
 
