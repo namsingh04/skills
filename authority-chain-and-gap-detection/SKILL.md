@@ -1,9 +1,9 @@
 ---
 name: "authority-chain-and-gap-detection"
 description: "The precedence order between solution document, standards, Jira and repository (solution > standards > jira > repository), and the rules for what counts as a genuine design gap versus something that can be read from the reference/repo or is simply unknown until deployment. Use whenever sources disagree or something needed is absent."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Authority chain and gap detection
@@ -91,9 +91,15 @@ source answers: genuine intent (an allowed set of values, a policy choice) and o
 **Not a gap: a decision the specification stage exists to make.** Which module a function
 belongs in, what to name a class, how to structure the tests. That is design, not ambiguity.
 
-**Is a gap even though it feels minor: any untestable non-functional requirement.** "fast",
-"secure", "scalable". Those become test assertions and alerts, and inventing the number is
-how a threshold nobody agreed to ends up in production.
+**Not a reflex gap: an unspecified but tunable non-functional target.** "fast", "secure",
+"scalable" and the metrics behind them — latency, throughput, retention, concurrency, cache TTL,
+message size, availability. When a defensible, reversible default exists, record it as a
+`proposedDefault` and proceed; do NOT raise a separate human-review gap for each metric. A page of
+"what is the maximum X?" questions is the noise that buries the gaps that matter, and — because each
+is an independent judgement — it is why the same input produces a different, longer gap list every
+run. Raise one only when no defensible default exists, or the value materially changes the design.
+Never silently invent a threshold and present it as agreed: a recorded default is the honest path,
+neither silence nor a fabricated fact.
 
 ## Severity and the two flags
 

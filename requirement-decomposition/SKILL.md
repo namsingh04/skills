@@ -1,9 +1,9 @@
 ---
 name: "requirement-decomposition"
 description: "Separate business, functional, non-functional and technical requirements cleanly, and write each as a discrete testable statement with its source. Use in the analysis stage by the business, functional, non-functional and technical requirement agents."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Requirement decomposition
@@ -83,25 +83,37 @@ it is not a requirement.
 acceptance criteria cover it, cite them; that is what they are for. Where nothing covers it,
 say so — an untested requirement is a real finding.
 
-## Untestable wording is a gap, not a requirement
+## Untestable wording: search, then default it — do not gap it by reflex
 
-"fast", "robust", "user-friendly", "scalable", "secure", "as needed", "appropriately".
+"fast", "robust", "user-friendly", "scalable", "secure", "as needed", "appropriately" — each is a
+number somebody has not written down.
 
-Each of these is a number somebody has not written down. Raise a gap asking for it, record
-the requirement with `measurable: false`, and give a `proposedDefault` where the documents
-support one. Do not supply the number yourself: a latency budget you invented becomes a test
-assertion, and then a production alert.
+**FIRST search the Solution-Model, standards, jira and the reference for it** — retry counts, backoff,
+timeouts, concurrency, retention periods and similar thresholds are frequently stated in the design
+outright (a diagram noting "3 attempts, exponential backoff" IS the answer). If it is there, it is a
+requirement, not a gap.
 
-**But FIRST search the Solution-Model for the number** — retry counts, backoff, timeouts,
-concurrency, retention periods and similar thresholds are frequently stated in the design outright (a
-diagram noting "3 attempts, exponential backoff" IS the answer). Only a value that appears nowhere in
-the solution, standards, jira, or reference is a genuine gap. Reserve gaps for the truly-open
-operational targets (SLOs, budgets) and genuine intent, not for numbers the document already gives.
+If it is genuinely open, decide by whether a defensible, reversible default exists:
+
+- **A tunable operational metric with a sensible default** — a latency budget, throughput, cache TTL,
+  concurrency ceiling, log-retention window, message-size limit, availability target and the like:
+  record the requirement with `measurable: false` and a `proposedDefault`, and **proceed on that
+  default. This is NOT a human-review gap.** A page of "what is the maximum X?" questions buries the
+  gaps that matter and is a main reason the same input yields a different, longer gap list each run.
+  Note the default in the summary; the reviewer can object on the pull request.
+- **No defensible default, or a value that materially changes the design** — a real SLO or budget a
+  wrong guess would build the system wrong around: THEN it is a genuine gap.
+
+Never supply a number and present it as documented: a latency budget you invented, recorded as if it
+were stated, becomes a test assertion and then a production alert. Recording it explicitly as a
+`proposedDefault` is the honest middle path — not silence, and not a fabricated fact.
 
 ## Do not invent, do not merge, do not resolve
 
-**Do not invent.** Where the source is silent, the answer is a gap. A plausible requirement
-is indistinguishable from a real one three stages later.
+**Do not invent.** Where the source is silent about a *functional* requirement, the answer is a gap —
+a plausible behaviour is indistinguishable from a real one three stages later. (A silent *tunable
+metric* is the one exception handled above: record a `proposedDefault` and proceed, do not invent it
+as if stated.)
 
 **Do not merge a contradiction.** Two sources that disagree produce a `CONTRADICTION` gap with
 both readings recorded. A compromise between them is a third requirement that nobody wrote,
