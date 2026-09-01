@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 10
+version: 11
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -146,13 +146,20 @@ repository). Resolve it against the checkout, so on disk each file lands at
 directory, not part of the repo layout; staging strips it, so the committed path is exactly the
 fileMap path. Concretely:
 
-- **DO** write at `<checkout>/<fileMap path>`, i.e. under `src/` (`cd` into the `src/` checkout first,
-  or join the fileMap path onto the absolute checkout path you were given).
-- **DO NOT** write at the bare run root (`<run-root>/<fileMap path>`, outside `src/`). Those files are
-  orphaned — the exact failure seen on 2026-08-31, when half the modules landed outside `src/`, so the
-  checkout was missing files and imports/tests failed.
-- **DO NOT** double the segment to `src/src/…` by adding `src/` to a fileMap path that is already
-  resolved against the `src/` checkout.
+- **The `src/` checkout is a SIBLING of `workflow_output`, not a child of it.** Both sit directly under
+  the run root: `<run-root>/src/` (the repo) and `<run-root>/workflow_output/` (where your stage
+  outputs go). Use the **absolute checkout path** you were handed. If all you have is the "proven dir",
+  it ends in `/workflow_output`, so the checkout is its sibling — `<proven dir>/../src` — never a
+  `src/` created *inside* `workflow_output`.
+- **DO** write at `<checkout>/<fileMap path>` — join the repo-relative fileMap path onto the absolute
+  checkout path (or `cd` into the checkout first).
+- **DO NOT** write at `<run-root>/workflow_output/src/<fileMap path>`. That is the exact failure seen on
+  2026-09-01: every file landed under `workflow_output/src/…`, which is excluded from staging and
+  invisible to validation, so the run reported "files not in the checkout" and validation ran over the
+  wrong tree. `workflow_output` holds stage JSON only — never source code.
+- **DO NOT** write at the bare run root (`<run-root>/<fileMap path>`, outside `src/`) — also orphaned.
+- **DO NOT** double the segment to `src/src/…` by adding `src/` to a fileMap path already resolved
+  against the `src/` checkout.
 
 Every code agent must resolve this the same way: **all files inside the `src/` checkout, once, at the
 repo-relative fileMap path beneath it.**

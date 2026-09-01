@@ -1,9 +1,9 @@
 ---
 name: "gap-file-publication"
 description: "Assemble the design gaps raised across every stage into one reviewable file, deduplicated, ordered by what actually blocks progress, and decide whether a human needs to see it at all. Use by the gap presenter and the gap decision agents."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Gap file publication
@@ -48,7 +48,13 @@ Drop, and record in `filtered` with the reason:
   deployment or correctness** — e.g. network IDs missing for some of the required environments,
   a permission the role does not yet have, an egress path nobody has confirmed. That is a
   reviewer's question: keep it (see the flag rule below), do not file it away as routine config.
-- **Anything answerable by reading** a file in the repository or a document already fetched.
+- **Anything answerable by reading** a file in the repository or a document already fetched. This
+  catches the class that keeps slipping through: a **request/response schema, payload shape, a header
+  or Content-Type, an endpoint URL, a request format, an enum, a parameter's meaning** is almost always
+  in the **solution document's mock data and sample exchanges** — search `Solution-Model.json` for the
+  noun before publishing it. A run published five such gaps whose answers the solution doc stated
+  dozens of times over. If the value is in the model, drop the gap to `filtered` with "present in
+  Solution-Model" as the reason; do not send the reviewer a question the document already answers.
 - **Design decisions the specification stage owns** — module placement, naming, test
   structure.
 - **Gaps whose `proposedDefault` is obviously right and reversible.** Record the default,

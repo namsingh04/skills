@@ -1,9 +1,9 @@
 ---
 name: "output-validation"
 description: "How a stage validator behaves - read artifacts from their paths, check structure and consistency rather than taste, and return PASS or FAIL with the failed component named and a reason specific enough to retry against. For every validation gate agent."
-version: 3
+version: 5
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Output validation
@@ -44,16 +44,13 @@ PRESENT, never that nothing else appears and never that `PARTIAL` is forbidden.
 An empty array where content was expected is a finding; an empty array that legitimately
 means "none" is not, and you must be able to tell which by reading the stage's own contract.
 
-One completeness check earns its own line because it has silently broken whole runs: on the
-analysis stage's `Repo-Profile.json`, **an empty `projectSkeleton` (blank `layout`, empty
-`requiredDirs`/`requiredFiles`) is a FAIL whenever the profile itself shows the target sits among
-sibling projects that share a layout, or the solution model names a reference project** — because
-`repository-discovery` makes the skeleton mandatory in that case, and the spec stage builds its
-`fileMap` from it. Tell the two situations apart by reading the profile: if its `layout` lists
-sibling project directories (or `isEmpty` is false and there is more than one project), the skeleton
-must be populated. Empty-with-no-gap is the failure; empty accompanied by a gap explaining there was
-no sibling or reference is the legitimate "none". FAIL to `RepositoryDiscoveryAgent` with a
-`retryReason` naming the sibling it must model on.
+On the analysis stage's `Repo-Profile.json`, do **NOT** fail an empty `projectSkeleton` here. A
+deterministic step that runs AFTER this stage (the skeleton backfill) identifies the reference sibling
+itself and fills `modelledOn`, `layout`, `requiredDirs` and `requiredFiles` — so a blank skeleton at
+analysis time is expected and is corrected downstream, not a defect the agent must retry. Failing it
+here only forces a pointless re-run of an agent that cannot do better. If the skeleton is blank and
+the profile shows the target sits among sibling projects, record it in `warnings` (the backfill will
+complete it); reserve any FAIL for a genuinely broken profile (missing file, unparseable, no envelope).
 
 **Internal consistency.** Do the pieces agree with each other? A summary count that
 disagrees with the array it summarises. A path referenced in one file that no other file
