@@ -1,9 +1,9 @@
 ---
 name: "test-generation-and-validation"
 description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Test generation and validation
@@ -127,6 +127,17 @@ Quote the actual failure output in `evidence`. The fixer works from that text; a
 costs it a round of investigation, and there are only two rounds.
 
 `fixTarget` names **one** agent per finding. That is what gets retried.
+
+**Coverage below the floor is itself a finding — raise it, do not let it pass silently.** When the
+coverage check reports a real percentage measured below the gate (not a `SKIPPED`/absent tool), add a
+finding for it: `severity: HIGH`, `check: coverage`, `problem` naming the modules the coverage report
+shows uncovered (the 0% and low-percentage files — usually the auth/token, retry, client and config
+modules), and `evidence` quoting the coverage table's per-file rows. **The fix is to ADD TESTS for those
+modules' untested success, retry and error paths — never to lower the floor, delete code, or write empty
+assertions to inflate the ratio.** Set `retryRequired: true`. This is what stops a run shipping at 77%
+because the plumbing modules were left with one happy-path test or none — the single most common reason
+coverage lands in the 70s. A file with zero tests is never acceptable: every generated module gets a
+test file.
 
 Your envelope `status` is `OK` when you completed the validation, even when `verdict` is
 `FAIL`. Status describes whether you worked; verdict describes what you found.
