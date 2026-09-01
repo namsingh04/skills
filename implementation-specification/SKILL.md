@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 7
+version: 8
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Implementation specification
@@ -148,6 +148,19 @@ Write `20-spec/Implementation-Spec.json`. In `payload`:
   "assumptions": [{"statement": "", "because": "", "gap": "GAP-spec-004"}]
 }
 ```
+
+**Writing a large spec file — build it in chunks, do not one-shot a huge `write_file`.** A full
+design model (`BusinessLogic.json`, `Infrastructure.json`, `Integration.json`, or this
+`Implementation-Spec.json`) is often tens of kilobytes, and a single `write_file` whose `content`
+argument is that large intermittently malforms — the tool rejects it with `Invalid input format` and
+the agent stalls retrying. This is exactly what stalled `BusinessLogicDesignAgent` on 2026-09-01 once
+the project skeleton grew: the *content* was correct, only the single-shot write failed. So for any
+sizable output, write it with `command_line`, in SEQUENTIAL APPENDED CHUNKS, to the SAME single file —
+`cat > '<abs path>/File.json' <<'EOF' … first part … EOF`, then `cat >> '<abs path>/File.json'
+<<'EOF' … next part … EOF` for each further section, keeping each chunk to roughly a screenful. The
+file stays one file at its normal path — nothing downstream changes — it simply lands reliably instead
+of intermittently. Then read it back to confirm it parses. (See `workflow-run-contract`.) Do not split
+the model across multiple files, and do not trim its content to fit one call.
 
 `fileMap` marks `create` versus `modify` explicitly. A code agent that modifies a file it
 believed it was creating overwrites work, and that failure is not recoverable from within the
