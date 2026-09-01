@@ -1,9 +1,9 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Workflow run contract
@@ -299,9 +299,13 @@ with properties 'path' (string) and 'content' (string)`, and retrying the same w
 large envelope once looped a whole stage this way (2026-08-31: BusinessLogic.json, 5 failed writes,
 15 min, no output).
 
-**If `write_file` returns that error (or any failure), do NOT retry it unchanged.** Write the file
-with `command_line` instead, which is immune to the tool's shape and size limits — a single-quoted
-heredoc to the ABSOLUTE path you were given:
+**A large output (roughly a screenful of JSON or more) must NOT go through `write_file` at all — write
+it with `command_line` from the start.** A big `content` argument is where `write_file` fails: the tool
+call itself gets truncated or malformed above a certain size, so the write is rejected with the error
+above and the agent stalls retrying it — on 2026-09-01 `BusinessLogicDesignAgent` burned ~34 minutes
+this way (two rejected single-shot writes, no output) and the delay pushed code generation past the
+platform's auth window, failing the whole run. `command_line` is immune to the tool's shape and size
+limits. Use a single-quoted heredoc to the ABSOLUTE path you were given:
 
 ```bash
 cat > '/abs/path/you/were/given/File.json' <<'ENVELOPE_EOF'
@@ -309,8 +313,16 @@ cat > '/abs/path/you/were/given/File.json' <<'ENVELOPE_EOF'
 ENVELOPE_EOF
 ```
 
-Then list the file to confirm it exists and is non-empty. Either path is fine; the point is that the
-file lands, once, with your real content.
+**If the file is very large, write it in SEQUENTIAL APPENDED CHUNKS** so no single tool call carries the
+whole payload — start with `cat > file <<'EOF' … EOF` for the first part, then `cat >> file <<'EOF' …
+EOF` for each following part. Keep each chunk to roughly a screenful. This is what makes a big model
+file (a full BusinessLogic / Infrastructure / Integration spec) land reliably instead of intermittently.
+
+**And if `write_file` ever returns the format error (or any failure), do NOT retry it unchanged** —
+switch to the `command_line` heredoc above immediately; never loop on `write_file`.
+
+Then list the file to confirm it exists and is non-empty. The point is that the file lands, once, with
+your real content — via `command_line` for anything large, `write_file` only for small files.
 
 ## Verify before you return
 
