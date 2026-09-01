@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 9
+version: 10
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-01"
 ---
 
 # Repository discovery
@@ -164,8 +164,21 @@ one-to-one; a skeleton that is absent, or that collapses per-environment files i
 why a run ships a single environment's config files instead of every environment's. If you described
 the reference but left `requiredDirs`/`requiredFiles` empty, you have not finished the task.
 
-**You already ran the listing — now RECORD it. The `find`/`git ls-files` output you just read IS the
-skeleton;** transcribe those exact paths into `requiredDirs`/`requiredFiles`. Leaving the field empty
+**The two fields that MUST be set are `modelledOn` and `layout` — they are the anchor everything
+downstream depends on.** `modelledOn` is the reference project's directory (repo-relative, e.g. the
+sibling the solution doc says to model on); `layout` is where the NEW project goes (repo-relative,
+the reference's shape with the new name). Identifying these two from the solution doc and the repo is
+the one judgement only you can make — always set both. A deterministic step after you
+(`10a_backfill_skeleton`) then lists `modelledOn` exhaustively on disk and fills
+`requiredDirs`/`requiredFiles` with the target's paths, so **every** file the reference carries
+(config dirs like `setup/`, per-environment files, descriptors, helpers) is captured with no omission
+— provided you set `modelledOn` and `layout` correctly. Set them precisely; the enumeration is handled
+for you.
+
+**You already ran the listing — RECORD it too when you can.** The `find`/`git ls-files` output you
+just read IS the skeleton; transcribe those exact paths into `requiredDirs`/`requiredFiles`. (If you
+fill them, the deterministic step leaves your list untouched; if you cannot, it completes them from
+`modelledOn` — but it can only do that when `modelledOn` and `layout` are set.) Leaving the field empty
 after you have seen the tree is the recurring, run-breaking failure (2026-08-31: the sibling tree,
 `setup/` dirs and `template.yaml` were all listed in the agent's own shell output, yet `projectSkeleton`
 came back blank and the generated project had no `setup/` at all).

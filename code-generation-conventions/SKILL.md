@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 9
+version: 10
 created: "2026-08-20"
 updated: "2026-08-31"
 ---
@@ -134,20 +134,28 @@ deterministic step assembles `40-codegen/Generated-Files.json` from what is actu
 the stage and merges your `unit`/`satisfies` onto it. Do **not** append to a shared
 `Generated-Files.json` yourself: parallel agents appending to one file clobber each other, and the
 manager's own report once overwrote the whole list, leaving validation with no file paths at all.
-**Every `path` is the EXACT fileMap path, relative to the checkout — which IS the repository root.**
-Use the layout the repository actually has (`Repo-Profile.json` `sourceRoots`); do NOT prepend
-`src/` or any prefix the repo does not have. The shape below is illustrative — a repo whose projects
-live at `<top>/<name>/…` uses that real layout, not a `src/` a generator imagined.
+**Write every file INSIDE the checkout — and the checkout is the `src/` directory under the run
+root.** The platform clones the target repository into `<run-root>/src/`, and the staging step lists
+what to commit with `git` run from that directory, so only files under `src/` are part of the
+repository at all. A file written anywhere else is orphaned: it is never staged, never committed, and
+the validation run (which executes inside the checkout) cannot see or import it.
 
-**A generic system/platform instruction telling you to place "newly created files" under a `src/`
-folder does NOT apply to these deliverables — ignore it for fileMap files.** That instruction is a
-sandbox default for scratch work; your fileMap paths are real destinations inside the checked-out
-repository and must be written verbatim, at the repo root, exactly as the spec gives them. Prepending
-`src/` splits the project across two trees — manifest and descriptors at `<top>/<name>/…` while source
-lands at `src/<top>/<name>/…` — so imports no longer resolve and the test run fails. This is not
-hypothetical: on 2026-08-31 the scaffold wrote `requirements.txt` to the correct path while the
-implementation agents prepended `src/` to every module, and validation failed with unresolved imports.
-Every code agent must resolve this the same way: **the fileMap path wins; no `src/` prefix.**
+A `fileMap` path is **repo-relative** (for example `<top>/<name>/…`, the path as it will appear in the
+repository). Resolve it against the checkout, so on disk each file lands at
+`<run-root>/src/<fileMap path>` — e.g. `src/<top>/<name>/…`. The `src/` segment is the checkout
+directory, not part of the repo layout; staging strips it, so the committed path is exactly the
+fileMap path. Concretely:
+
+- **DO** write at `<checkout>/<fileMap path>`, i.e. under `src/` (`cd` into the `src/` checkout first,
+  or join the fileMap path onto the absolute checkout path you were given).
+- **DO NOT** write at the bare run root (`<run-root>/<fileMap path>`, outside `src/`). Those files are
+  orphaned — the exact failure seen on 2026-08-31, when half the modules landed outside `src/`, so the
+  checkout was missing files and imports/tests failed.
+- **DO NOT** double the segment to `src/src/…` by adding `src/` to a fileMap path that is already
+  resolved against the `src/` checkout.
+
+Every code agent must resolve this the same way: **all files inside the `src/` checkout, once, at the
+repo-relative fileMap path beneath it.**
 
 ```json
 {
