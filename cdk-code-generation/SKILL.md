@@ -1,201 +1,218 @@
 ---
-name: "cdk-code-generation"
-description: "Generate AWS CDK code into an existing repository from an InfraSpec: plan the files first, split the work across sub-agents by disjoint directory ownership, copy every literal from the specification verbatim, turn genuinely unknown values into validated configuration fields, and produce a file plan that doubles as the commit allowlist."
-version: 1
-created: "2026-08-05"
-updated: "2026-08-05"
+name: "code-generation-conventions"
+description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
+version: 12
+created: "2026-08-20"
+updated: "2026-09-02"
 ---
 
-## When to Use
+# Code generation conventions
 
-Use in the code generation stage, after an `InfraSpec` has been produced and any human gap
-review has been merged, to write CDK code into an existing repository checkout.
+Your output is judged by one question: **could a reviewer tell your files from the existing
+ones by style alone?** If yes, the work is not done, however correct the logic.
 
-Both the manager coordinating the stage and each code-writing sub-agent use this skill.
+## What you read
 
----
+`20-spec/Implementation-Spec.json` — what to build. This is your instruction set.
+`20-spec/Integration.json` — the contracts.
+`10-analysis/Repo-Profile.json` — how this codebase does things. **This is the standard** — its
+conventions, naming, layout and `projectSkeleton` are the rules your code conforms to.
+`50-validation/Toolchain-Profile.json` — the language and its commands.
 
-## Inputs
+**Read `20-spec/Implementation-Spec.json`'s `coverage.deferredToStage`.** Any entry naming
+`codegen` is a requirement the specification stage deliberately handed to you — `TC-029:
+requirements.txt must pin exact versions`, for instance. Treat those as your own obligations
+and cite them in the `satisfies` of the files you write; nothing else will.
 
-- `InfraSpec` (post-review, resolved) — what to build and how it fits the repository.
-- The **standards file** — the base authority for conventions and structure.
-- The **Solution Design** text — the authority for literal names and settings.
-- `RepoProfile` — the repository as it actually is.
+**You do not read the requirements models, and you must not.** If the spec does not say it,
+it is not yours to infer. A gap in the spec is a gap to report, not a hole to fill with a
+guess about what the business probably wanted — the specification stage exists precisely so
+that those decisions are visible before they become code.
 
-Apply the authority chain from the `workflow-status-contract` skill to every value:
-standards file, then Solution Design, then RepoProfile, then a declared gap — with
-RepoProfile winning on mechanical facts required to compile.
+## Match the repository, then the language
 
----
+The repository is the standard: match what `Repo-Profile.json` reports, and where it is
+internally inconsistent, follow the convention that dominates and say so in your output. A
+reviewer seeing one file in a new style needs to know it was deliberate.
 
-## Before Writing Anything: the Branch Check
+Concretely, imitate:
 
-Confirm the checkout is on the target branch before the first write, and refuse to write
-if it is not. Generated code must never land on the source branch. If HEAD is not the
-target branch, stop and return `BLOCKED` naming the branch you found — do not check out a
-branch yourself, and do not write anyway.
+- **Naming** — modules, functions, classes, constants, tests. Copy the observed convention,
+  including its inconsistencies where the profile reports them.
+- **Error handling** — the existing error types, the existing wrapping, the existing logging.
+  Do not introduce a new exception hierarchy beside one that already works.
+- **Configuration** — read settings the way the repository reads settings.
+- **Comment density and style.** A codebase with no comments does not want yours; one that
+  documents every public function wants that too. This is the tell reviewers notice first.
+- **Imports and layout** — ordering, grouping, absolute versus relative.
 
----
+## A standards profile, when present, outranks the repository
 
-## Step 1 — The File Plan
+If `00-inputs/Standards-Profile.json` exists, read it first. Its `mandatory` rules are binding and
+**override the repository's own conventions** where they conflict — the authority chain is
+`solution doc > standards > jira > repository`, and the repository is the lowest. `advisory` rules
+are preferences: follow them unless the repository clearly does otherwise. A standard that the spec
+already recorded as overridden by the solution doc upstream is settled — follow the spec's
+resolution, do not re-litigate it. Run the profile's `requiredCommands` (lint, coverage, type-check)
+as part of "done". Any rule you break is a recorded `deviation` with its id. When the file is absent,
+nothing here applies and the repository is the standard as usual.
 
-The manager writes the file plan **before** any sub-agent runs. It is the contract for the
-whole stage and it is also the commit allowlist: nothing outside it may be staged later.
+## Reuse is not optional
+
+Before writing any helper, check `Repo-Profile.json` and the spec's `reuse` list. If the
+repository has an error type, a client wrapper, a config loader, a retry decorator, a test
+factory — use it.
+
+A second implementation of something that already exists is the most common reason generated
+code is rejected, and it is entirely avoidable: the spec told you, and the profile told you.
+
+## A reference project is a pattern, not a donor
+
+When the spec names a REFERENCE project to model on — a sibling Lambda, an example service — study
+its conventions and reproduce them in NEW files written for THIS spec's units. Do not copy its
+source files across and rename them. Cloning ships the reference's business logic (and its bugs, and
+dead code your spec never asked for), and a reviewer sees it immediately. Adopt the PATTERNS — the
+layout, the naming, the config-indirection, the error handling — and write the behaviour your own
+spec defines. Genuinely shared code is imported, never duplicated; but in a repo of self-contained
+projects, reproduce the per-project helpers the convention calls for freshly, and test them to this
+project's coverage floor rather than assuming the reference already did.
+
+**The reference's generic shared-utility modules are PROVIDED to you — call them, do not rewrite
+them.** The convention layer — the reference's logging helpers, its property/SSM/config readers, its
+common utilities and constants (the modules under its `utilities/`, `common/`, `helpers/`, `lib/` or
+`core/` directory) — is reproduced verbatim into this project from the reference before your code is
+validated, so its public API is FIXED and identical to the reference's. Import and call those
+functions by their real names (e.g. `from utilities.log_utils import print_info_logs`); do NOT
+re-implement them, do NOT rename them, and do NOT substitute a different mechanism (for example
+stdlib `logging`) where the reference has its own logging helpers — a caller that invents
+`log_utils.write_log` or falls back to `logger.info` when the house API is `print_info_logs` breaks
+at import time and fails every test. If a shared helper you need is not among the provided modules,
+add it to that same shared module rather than forking a parallel one. This carve-out is only for the
+generic shared-utility layer; every business/domain module is still authored fresh from your spec.
+
+Two different things, and keep them apart: **reproduce the reference's STRUCTURE exactly; author the
+CODE fresh.** The structure — the directory layout captured in `Repo-Profile.json` `projectSkeleton`,
+one config file per environment where the reference has per-environment config, every descriptor and
+sample directory it carries, and NO files it does not have (no invented modules, no extra package
+markers) — is copied faithfully, because a reviewer expects this project to sit next to the reference
+and look like it. The bodies inside those files are written for THIS spec. Collapsing several
+per-environment files into one, or scattering the layout across a different shape, is as wrong as
+cloning the logic — both make the project fail to match the reference it was told to follow. Name no
+specific folder or file from your own knowledge; take the exact set from the profile.
+
+**Use the reference's OWN directory names — do not invent your own taxonomy.** If the reference
+groups its helpers under one directory, your helpers go in a directory of that same name; do not
+split them into several new fine-grained subdirectories the reference does not have when it keeps
+them together (or vice-versa). The set of directories in your project is the set in the
+`projectSkeleton`, with the same names — no more, no fewer. A tidier structure you prefer is still
+the wrong structure.
+
+## No placeholders
+
+Never write:
+
+- `TODO`, `FIXME`, or `# implement me` in place of a body.
+- A function that returns a hardcoded value where logic was specified.
+- A `pass`, `NotImplementedError` or empty block presented as complete.
+- A comment describing what the code would do if it were written.
+
+If you cannot implement something — the spec is silent, a dependency is missing, a contract is
+unresolved — **do not stub it and report success**. Report `PARTIAL`, name the unit in your
+output as `notImplemented` with the reason, and let the validator and the summary carry it.
+A stub reported as complete is worse than a missing file: the missing file fails loudly, the
+stub passes and ships.
+
+## Write the whole file
+
+Produce complete, syntactically valid files. Not fragments, not diffs, not "the rest is
+unchanged". If you are modifying an existing file, read it first, then write it back whole
+with your changes integrated.
+
+**Check `fileMap` for `create` versus `modify` before writing.** Writing a file marked
+`modify` as though it were new overwrites existing work, and nothing in this run can recover
+it.
+
+**Write EVERY file the fileMap marks `create` — code AND config.** Deployment descriptors,
+per-environment config files, sample/fixture files, property/settings files and manifests all count:
+if the fileMap or the repo's `projectSkeleton` names it, produce it with real content. Creating an
+empty directory and moving on is not "done" — an empty folder is never committed, and the run fails
+the existence gate. A missing config file breaks a deploy exactly as a missing module breaks an
+import.
+
+## Record what you wrote
+
+Record every file you wrote in YOUR OWN stage output — the `Core.json` / `Integration.json` /
+`Tests.json` / `Scaffold.json` your manager named — under a `files` list in the shape below. A
+deterministic step assembles `40-codegen/Generated-Files.json` from what is actually on disk after
+the stage and merges your `unit`/`satisfies` onto it. Do **not** append to a shared
+`Generated-Files.json` yourself: parallel agents appending to one file clobber each other, and the
+manager's own report once overwrote the whole list, leaving validation with no file paths at all.
+**Write every file INSIDE the checkout — and the checkout is the `src/` directory under the run
+root.** The platform clones the target repository into `<run-root>/src/`, and the staging step lists
+what to commit with `git` run from that directory, so only files under `src/` are part of the
+repository at all. A file written anywhere else is orphaned: it is never staged, never committed, and
+the validation run (which executes inside the checkout) cannot see or import it.
+
+A `fileMap` path is **repo-relative** (for example `<top>/<name>/…`, the path as it will appear in the
+repository). Resolve it against the checkout, so on disk each file lands at
+`<run-root>/src/<fileMap path>` — e.g. `src/<top>/<name>/…`. The `src/` segment is the checkout
+directory, not part of the repo layout; staging strips it, so the committed path is exactly the
+fileMap path. Concretely:
+
+- **The `src/` checkout is a SIBLING of `workflow_output`, not a child of it.** Both sit directly under
+  the run root: `<run-root>/src/` (the repo) and `<run-root>/workflow_output/` (where your stage
+  outputs go). Use the **absolute checkout path** you were handed. If all you have is the "proven dir",
+  it ends in `/workflow_output`, so the checkout is its sibling — `<proven dir>/../src` — never a
+  `src/` created *inside* `workflow_output`.
+- **DO** write at `<checkout>/<fileMap path>` — join the repo-relative fileMap path onto the absolute
+  checkout path (or `cd` into the checkout first).
+- **DO NOT** write at `<run-root>/workflow_output/src/<fileMap path>`. That is the exact failure seen on
+  2026-09-01: every file landed under `workflow_output/src/…`, which is excluded from staging and
+  invisible to validation, so the run reported "files not in the checkout" and validation ran over the
+  wrong tree. `workflow_output` holds stage JSON only — never source code.
+- **DO NOT** write at the bare run root (`<run-root>/<fileMap path>`, outside `src/`) — also orphaned.
+- **DO NOT** double the segment to `src/src/…` by adding `src/` to a fileMap path already resolved
+  against the `src/` checkout.
+
+Every code agent must resolve this the same way: **all files inside the `src/` checkout, once, at the
+repo-relative fileMap path beneath it.**
 
 ```json
 {
-  "filePlan": [
+  "files": [
     {
-      "path": "<repo-relative path>",
-      "action": "create | modify",
-      "owner": "<sub-agent that writes it>",
-      "purpose": "<what this file contributes>",
-      "specRefs": ["<InfraSpec resource or decision ids>"]
+      "path": "<exact fileMap path from the spec, relative to the repo root>",
+      "action": "create",
+      "unit": "SPEC-007",
+      "satisfies": ["FR-004"],
+      "linesWritten": 84,
+      "reused": ["<repo-relative path>:IngestError"],
+      "deviations": [{"from": "STD-012", "why": "", "approved": false}]
     }
-  ]
+  ],
+  "notImplemented": [{"unit": "SPEC-011", "why": "contract CON-004 has no response shape; gap GAP-spec-009"}]
 }
 ```
 
-Rules:
+`satisfies` feeds the traceability matrix. A file that satisfies nothing is a file the spec
+did not ask for.
 
-- Every file the stage intends to touch appears here. A file written but not planned is a
-  defect, and it will not be committed.
-- **Paths come from the authority chain, never from assumption.** Where the standards file
-  prescribes a directory layout, use it; otherwise take the layout RepoProfile observed.
-  Do not impose a conventional CDK layout on a repository that does not use one.
-- Each file has exactly one owner. Two sub-agents must never own the same file.
+`deviations` is for the times you had to break a rule. Say which, and why. An unrecorded
+deviation looks like a mistake; a recorded one is a decision.
 
----
+## Keep context cheap
 
-## Step 2 — Disjoint Ownership
+You already have the spec, the repo profile and your fileMap — that is what to build. When you do
+touch the filesystem, keep `ls`/`find`/`cat` scoped to the TARGET project directory and pipe
+listings through `head`. Never `ls -R` or `find` the whole monorepo: a large listing lands in your
+context and is re-sent on every later turn, which is the biggest avoidable cost in this stage.
 
-Sub-agents run in parallel, so their file sets must not overlap. Partition by role:
+## Verify before reporting
 
-- **stack code** — stack definitions and the application entry point wiring;
-- **construct code** — reusable constructs;
-- **configuration** — per-environment configuration files and their loaders;
-- **tests** — the test files for the above.
-
-Each writes only files the plan assigns to it. **Cross-file wiring is the manager's job**,
-after all sub-agents return: imports, stack instantiation, registration in the entry point,
-and anything that requires knowing what another sub-agent produced. A sub-agent that edits
-a file it does not own creates a lost update, because the parallel writer has the same file
-open.
-
----
-
-## Step 3 — Writing the Code
-
-### Literals are copied, never regenerated
-
-Every stack name, resource name, key name, ARN pattern, event pattern value, retention
-period, timeout and retry count is copied **verbatim** from the InfraSpec — and where the
-InfraSpec lost it, from the Solution Design text.
-
-- Never shorten, abbreviate, expand or re-case a name.
-- Never replace a stated name with a generated pattern or an expression that reconstructs
-  it from configuration. If the design states the name, emit the name.
-- **Templated placeholder tokens** — an environment or account placeholder written in the
-  source — are reproduced byte for byte and resolved by the repository's existing
-  configuration mechanism at deploy time. Never substitute a concrete value, and never let
-  a placeholder collapse to the string `null`. **Any emitted name beginning `null-` is a
-  bug**: go back to the specification and copy the real name.
-- Never write a placeholder such as `CONFIG_REQUIRED` in place of a value the sources
-  state. That marker is only for a value genuinely absent from every source.
-
-### Unknown values become configuration fields
-
-A value that no source states does **not** stop generation. Declare it as a required
-configuration field:
-
-- add it to the configuration shape the repository already uses;
-- validate it where the repository validates its configuration, using the repository's own
-  validation helpers — take their names from RepoProfile, because they must actually exist;
-- fail at load time with a message naming the missing key, rather than defaulting silently.
-
-This is a normal, correct outcome. It is not a gap that blocks code generation.
-
-### Follow the repository, structurally
-
-- Use the constructs, base classes, helpers and patterns RepoProfile found. Do not
-  introduce a new architectural pattern, a new configuration mechanism, or a new directory
-  convention.
-- Extend an existing stack or construct where the InfraSpec classified the work `EXTEND`;
-  create only what it classified `CREATE`; reference what it classified `REFERENCE`; touch
-  nothing it classified `REUSE`.
-- Where the standards file prescribes behaviour the repository does not yet exhibit —
-  a required branch, a required guard, a required tag — emit it as the standards file
-  states, and record the divergence from the repository as a warning.
-
-### Scope
-
-Emit only what the InfraSpec's `scope.inScope` covers. A resource in `deferredScope` is not
-built, however convenient it would be and however much it shares a stack with something in
-scope. Referencing an out-of-scope resource as context is fine; creating it is not.
-
----
-
-## Step 4 — Report
-
-Each sub-agent returns a `CodeGenReport`; the manager merges them.
-
-```json
-{
-  "modelType": "CodeGenReport",
-  "branch": "<branch HEAD was on while writing>",
-  "filePlan": [ ],
-  "filesWritten": [
-    { "path": "", "action": "create|modify", "linesAdded": 0, "specRefs": [] }
-  ],
-  "configFieldsAdded": [
-    { "key": "", "type": "", "validatedIn": "", "reason": "<which value was unknown>" }
-  ],
-  "literalsCopied": [ { "value": "", "from": "InfraSpec|SolutionDesign", "usedIn": "" } ],
-  "deferredNotBuilt": [ { "item": "", "reason": "" } ],
-  "divergences": [ { "topic": "", "standardsSays": "", "repoDoes": "", "chose": "" } ],
-  "unplannedWrites": [ ]
-}
-```
-
-Plus the reserved envelope keys from the `workflow-status-contract` skill.
-
----
-
-## Guardrails
-
-- Do not write on the source branch, and do not switch branches.
-- Do not write a file that is not in the file plan. If one is genuinely needed, add it to
-  the plan first and record it in `unplannedWrites`.
-- Do not edit a file another sub-agent owns.
-- Do not invent a resource, a name, a key, or a numeric setting.
-- Do not build anything in `deferredScope`.
-- Do not emit a name containing an unresolved `null`.
-- Do not delete or rewrite existing repository code that the InfraSpec did not ask you to
-  change.
-- Do not run installs, builds, synth or deploys — validation is a separate stage.
-- Do not commit, stage, or push. Publishing is a separate stage.
-- Do not narrate. Return the report.
-
----
-
-## Verification
-
-Before returning, verify:
-
-1. `git rev-parse --abbrev-ref HEAD` is the target branch, and was throughout.
-2. Every path in `filesWritten` appears in `filePlan`, or in `unplannedWrites` with a
-   reason.
-3. No two sub-agents wrote the same path.
-4. Every resource the InfraSpec marked `CREATE` or `EXTEND` and placed in scope has a
-   corresponding file in `filesWritten`.
-5. Every literal name in the emitted code matches the InfraSpec or Solution Design
-   character for character — spot-check each stack and resource name.
-6. No emitted name contains the string `null` where a value belongs, and none begins
-   `null-`.
-7. Every templated placeholder token appears exactly as the source writes it.
-8. No `CONFIG_REQUIRED`-style marker survives for a value the sources actually state.
-9. Every configuration field added is validated with a helper that RepoProfile confirms
-   exists.
-10. Nothing in `deferredScope` was built.
-11. Every divergence between the standards file and the repository is recorded.
-12. The report parses as valid JSON with balanced braces and brackets.
+1. The file exists at the path you intended — list it.
+2. It parses. Use the toolchain profile's own tools: a syntax check, an import, a compile.
+   Syntactically broken output wastes a full validation round and one of two retries.
+3. Every import you wrote resolves to something that exists — either in the repository, in the
+   declared dependencies, or in a file another agent in this stage wrote. Do not import a
+   module you assumed a sibling would create; check, or specify it yourself.
+4. You wrote every unit assigned to you, or listed the ones you did not in `notImplemented`.
