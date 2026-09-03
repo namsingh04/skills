@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 14
+version: 15
 created: "2026-08-20"
 updated: "2026-09-02"
 ---
@@ -126,6 +126,25 @@ file the reference does not carry (for example a `Dockerfile`), you still produc
 outranks the repository. Where the reference carries per-environment `setup/`+`properties/` the standard
 does not enumerate, you still produce those. Neither source alone is the whole structure; the project
 must satisfy both.
+
+**Package shape — follow the reference's PATTERN, generate neither more nor less than the requirement.**
+- **Business logic lives in a subfolder, not flat.** If the reference keeps its business logic in a
+  domain subfolder (the skeleton records `businessLogicSubdir`), put THIS project's business modules in a
+  subfolder too — named for this project's domain, NEVER the reference's name (no `trekkn`, and no
+  reference-distinctive token in any path or identifier). Do not scatter business modules flat beside
+  `main.py`, and do not invent a role-based taxonomy the reference does not use.
+- **Tests live WITH the package**, at the same level as `main.py` (the deep package dir), never at the
+  middle `<name>/` level beside `setup/` — validation runs in the package root and will not collect
+  tests placed elsewhere.
+- **Nothing extra, nothing missing.** Write exactly what the spec/requirement asks: no unrequested
+  feature (e.g. a delete-SQS path nobody asked for), no second helper that duplicates a provided utility
+  (`config_reader` beside `prop_reader`, `structured_logger` beside `log_utils`), and no module the
+  project never imports. Equally, drop nothing the requirement needs. When you consume an external
+  response, capture it to match the sample response's actual shape, not an assumed one.
+- **`properties/` + `setup/` follow the standards config convention.** Their keys, file set and format
+  come from the `Standards-Profile` (its `properties` schema / `configurationFileStructure`) and the
+  reference; fill the VALUES for THIS solution — same keys as the convention, values for this project,
+  never the reference's values and never hardcoded.
 
 ## No placeholders
 

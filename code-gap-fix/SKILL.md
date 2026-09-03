@@ -1,7 +1,7 @@
 ---
 name: "code-gap-fix"
 description: "Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure."
-version: 3
+version: 4
 created: "2026-08-20"
 updated: "2026-09-02"
 ---
@@ -21,12 +21,21 @@ verbatim failure output. `50-validation/Validation-Result.json` has the raw comm
 
 **Also read `40-codegen/Convention-Findings.json` if it exists.** A deterministic conventions gate
 writes named findings there when the generated project violates a house convention this workflow has
-already learned — a per-environment config file missing the reference's key schema, a public symbol the
-callers use but the module does not define, a package directory renamed away from the reference. Treat
-each as a finding exactly like a validation finding: repair it against the reference and the spec (for a
-config-key gap, add the reference's keys with values drawn from the `Solution-Model` / `Standards-Profile`
-/ `Repo-Profile`, never the reference's own values and never hardcoded). These are known regressions with
-known fixes; resolve them rather than dismissing them.
+already learned. Treat each as a finding exactly like a validation finding — these are known regressions
+with known fixes; resolve them rather than dismissing them:
+- **CONV-004 / CONV-005 / CONV-009 (config):** a per-env `properties/`/`setup/` file is missing or lacks
+  the standard's key schema — add the reference/standards keys with values drawn from the `Solution-Model`
+  / `Standards-Profile` / `Repo-Profile`, never the reference's own values and never hardcoded.
+- **CONV-006 (tests mis-levelled):** move the test dir under the package root (the dir with `main.py`) so
+  validation collects it.
+- **CONV-007 (flat business logic):** move the business modules that sit flat beside `main.py` into the
+  project's domain subfolder (named for THIS project, never the reference's name), updating imports.
+- **CONV-008 (dead code / extra):** remove a module the project imports nowhere ONLY after confirming it
+  traces to NO spec requirement — never delete something a requirement needs; if unsure, report it, do
+  not delete. Likewise remove an unrequested feature or a duplicate of a provided utility.
+- **CONV-010 (reference-token leak):** rename any path or identifier carrying the reference's distinctive
+  name to a project-appropriate name.
+Repair against the reference and the spec, and generate neither more nor less than the requirement.
 
 For each finding, before touching anything:
 
