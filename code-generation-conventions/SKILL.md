@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 16
+version: 17
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -77,18 +77,18 @@ spec defines. Genuinely shared code is imported, never duplicated; but in a repo
 projects, reproduce the per-project helpers the convention calls for freshly, and test them to this
 project's coverage floor rather than assuming the reference already did.
 
-**The reference's generic shared-utility modules are PROVIDED to you — call them, do not rewrite
-them.** The convention layer — the reference's logging helpers, its property/SSM/config readers, its
-common utilities and constants (the modules under its `utilities/`, `common/`, `helpers/`, `lib/` or
-`core/` directory) — is reproduced verbatim into this project from the reference before your code is
-validated, so its public API is FIXED and identical to the reference's. Import and call those
-functions by their real names (e.g. `from utilities.log_utils import print_info_logs`); do NOT
-re-implement them, do NOT rename them, and do NOT substitute a different mechanism (for example
-stdlib `logging`) where the reference has its own logging helpers — a caller that invents
-`log_utils.write_log` or falls back to `logger.info` when the house API is `print_info_logs` breaks
-at import time and fails every test. If a shared helper you need is not among the provided modules,
-add it to that same shared module rather than forking a parallel one. This carve-out is only for the
-generic shared-utility layer; every business/domain module is still authored fresh from your spec.
+**The reference's shared utilities are PROFILED for their API — you IMPLEMENT them for THIS solution,
+you do NOT copy them.** `Repo-Profile.json` records, for each shared-utility module (the modules under
+the reference's `utilities/`, `common/`, `helpers/`, `lib/` or `core/` directory), its PUBLIC API — the
+exact function/class names and signatures the reference exposes (e.g. `log_utils.print_info_logs`,
+`prop_reader.get_property`). That API is the CONTRACT: implement each utility module in THIS project with
+those SAME public names and signatures, so every caller (`from utilities.log_utils import
+print_info_logs`) resolves and no test breaks on a renamed symbol. But the BODIES are yours to write for
+this solution — do NOT copy the reference's file contents, and do NOT carry across values that are the
+reference's (a `constant.py` gets THIS solution's constants, from the Solution-Model, never the
+reference's). Match the reference's public names; generate everything behind them. Do not fork a parallel
+helper (`config_reader` beside the profiled `prop_reader`) and do not substitute stdlib `logging` where
+the profiled API is `print_info_logs`.
 
 Two different things, and keep them apart: **reproduce the reference's STRUCTURE exactly; author the
 CODE fresh.** The structure — the directory layout captured in `Repo-Profile.json` `projectSkeleton`,
@@ -129,24 +129,30 @@ must satisfy both.
 
 **Package shape — follow the reference's PATTERN, generate neither more nor less than the requirement.**
 - **Business logic lives in a subfolder, not flat.** If the reference keeps its business logic in a
-  domain subfolder (the skeleton records `businessLogicSubdir`), put THIS project's business modules in a
-  subfolder too — named for this project's domain, NEVER the reference's name (no `trekkn`, and no
-  reference-distinctive token in any path or identifier). Do not scatter business modules flat beside
-  `main.py`, and do not invent a role-based taxonomy the reference does not use.
-- **Tests live WITH the package**, at the same level as `main.py` (the deep package dir), never at the
-  middle `<name>/` level beside `setup/` — validation runs in the package root and will not collect
+  domain subfolder (the skeleton records `businessLogicSubdir`), put THIS project's business modules
+  (clients, transformers, parsers, validators, processors) in a subfolder too — named for this project's
+  own domain, NEVER the reference project's own name, and no reference-distinctive token may appear in
+  any path or identifier. Do not scatter business modules flat beside `main.py`, and do not invent a
+  role-based taxonomy the reference does not use — mirror the reference's package set from the skeleton.
+  Write each file at the `targetPath` the spec's fileMap gives it; a file whose fileMap path is inside a
+  package must NOT be written flat at the package root.
+- **Tests live WITH the package**, in the reference's test directory name from the skeleton (e.g. `test/`
+  when the reference uses `test/`, not an invented `tests/`), at the same level as `main.py` — validation
+  runs in the package root and will not collect
   tests placed elsewhere.
 - **Nothing extra, nothing missing.** Write exactly what the spec/requirement asks: no unrequested
   feature (e.g. a delete-SQS path nobody asked for), no second helper that duplicates a provided utility
   (`config_reader` beside `prop_reader`, `structured_logger` beside `log_utils`), and no module the
   project never imports. Equally, drop nothing the requirement needs. When you consume an external
   response, capture it to match the sample response's actual shape, not an assumed one.
-- **`properties/` + `setup/` follow the standards config convention.** Their keys, file set and format
-  come from the `Standards-Profile` (its `properties` schema / `configurationFileStructure`) and the
-  reference; fill the VALUES for THIS solution — same keys as the convention, values for this project,
-  never the reference's values and never hardcoded. **If the spec's config unit is silent or contradicts
-  the standard** (a spec written before the standard was bound), the `Standards-Profile` config schema
-  WINS — apply the standard's keys/sections/format anyway; standards outrank a repository-derived unit.
+- **`properties/` + `setup/` — GENERATE per the solution, in the reference's config FORMAT (profiled),
+  never copied.** `Repo-Profile.json` records the reference config SCHEMA per environment: the section
+  headers (e.g. a `[ssm]` INI section for `.properties`), the exact key names, and the file format (INI
+  vs the hyphenated-key flat JSON of `_setup.json`). Produce each `properties/<env>.properties` and
+  `setup/<env>_setup.json` in that SAME format with those SAME keys, but with the VALUES for THIS solution
+  taken from the `Solution-Model` (endpoints, ARNs, env config, mock data) — never the reference's values,
+  never an AWS-SDK/CloudFormation shape or an `UPPER_SNAKE` flat file you invented, and never hardcoded.
+  The format is the reference's (profiled); the content is the solution's (generated).
 
 ## No placeholders
 

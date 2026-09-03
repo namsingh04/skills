@@ -1,7 +1,7 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 9
+version: 10
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -191,13 +191,28 @@ mandatory rules into `units`, `fileMap` and `constraintsObserved` (cite the rule
 rule you cannot specify a way to meet is itself a gap. When the file is absent, the repository is the
 standard exactly as before — this whole paragraph is a no-op.
 
-**In particular, specify the CONFIG the standard defines — this is where a standards-blind spec leaks
-into wrong code.** For every per-environment config file the fileMap lists (`properties/*.properties`,
-`setup/*_setup.json`, or whatever the standard names), the unit MUST state the standard's config SCHEMA
-— the exact keys, sections and format each file carries, and which values are environment-specific — so
-the code stage generates config that matches the standards document, not an invented flat shape. The
-folder structure and file set in the fileMap are the UNION of the `projectSkeleton` and the standards
-`folderStructure`/`requiredFiles`. Take keys and structure from the profiles; do not hardcode them.
+**Pin the PROFILED contract so the code stage generates, never copies.** `Repo-Profile.json`
+`projectSkeleton` now carries two profiles you must thread into the spec so the code agents match the
+reference's shape without copying its content:
+- **`utilityApi`** — for each shared-utility module, the reference's public function/class names +
+  signatures. The unit for each utility file states that its public API MUST match those names/signatures
+  (so callers resolve), while its BODY is implemented for this solution. Never specify "reuse the
+  reference's file" — the body is generated.
+- **`configSchema`** — for each per-environment config file the fileMap lists
+  (`properties/<env>.properties`, `setup/<env>_setup.json`, …), the unit MUST state that file's SCHEMA
+  from the profile: the `format` (e.g. `ini`, `json-flat`), the section headers, and the exact key names
+  — and that the VALUES come from the `Solution-Model` for this environment. So the code stage generates
+  config in the reference's format with the solution's values, not an AWS-SDK/`UPPER_SNAKE`/flat shape it
+  invented, and never the reference's own values.
+
+**Place every unit in its package — never flat.** Each unit's `targetPath` puts it inside the
+`projectSkeleton` package it belongs to — the reference's domain package for business/client/transform/
+parse logic, `utilities/` for shared helpers, `auth/` for auth, the reference's test dir name for tests
+— NEVER flat beside `main.py`, and never an invented `clients/`/`transformers/` taxonomy the reference
+does not have. The folder structure and file set in the fileMap are the UNION of the `projectSkeleton`
+and the standards `folderStructure`/`requiredFiles`. Take keys, packages and structure from the profiles;
+do not hardcode them. The standards document governs code CONVENTIONS (naming, error handling, coverage);
+the reference supplies STRUCTURE and FORMAT; the solution supplies VALUES and behaviour.
 
 `assumptions` records every default you proceeded on. Each one should have a gap id, and each
 one appears in the run summary — this is how a reviewer finds the decisions nobody made.

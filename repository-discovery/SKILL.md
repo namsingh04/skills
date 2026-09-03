@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 10
+version: 11
 created: "2026-08-20"
-updated: "2026-09-01"
+updated: "2026-09-03"
 ---
 
 # Repository discovery
@@ -121,12 +121,34 @@ later stages and the pre-commit gate enforce, in ANY language, without hard-codi
   "layout": "<top>/<name>/<name>/",
   "requiredFiles": ["<manifest, e.g. the sibling's dependency file>", "<entry point>"],
   "requiredDirs": ["<dirs every sibling has>"],
+  "utilityApi": [
+    {"module": "utilities/log_utils.py",
+     "publicSymbols": ["print_info_logs(message)", "print_error_logs(message)"]}
+  ],
+  "configSchema": [
+    {"file": "properties/<env>.properties", "format": "ini",
+     "sections": {"ssm": ["oauth-token-url", "models-api-base-url", "stream-api-base-url"]}},
+    {"file": "setup/<env>_setup.json", "format": "json-flat",
+     "keys": ["name", "runtime", "role", "vpc-config", "handler", "code", "memory-size", "timeout",
+              "source-arn", "environment"]}
+  ],
   "evidence": ["<path to a sibling file proving the layout>"]
 }
 ```
 
 - `requiredFiles` are the files EVERY sibling has (by basename) — the manifest and entry point,
   not project-specific modules. Two siblings sharing a file makes it a convention; one does not.
+- **`utilityApi` PROFILES the reference's shared-utility modules for their PUBLIC API only** — for each
+  module under the reference's `utilities/`/`common/`/`helpers/`/`lib/`/`core/` dir, list its public
+  function/class NAMES and signatures (read them from the file), NOT its bodies or values. This is the
+  contract the code stage implements against so callers resolve by name — it lets the code be GENERATED
+  for this solution instead of the reference's file being copied. Language-agnostic: list whatever public
+  symbols the reference's language exposes.
+- **`configSchema` PROFILES the per-environment config FORMAT only** — for each config file the reference
+  carries (`properties/<env>.properties`, `setup/<env>_setup.json`, or whatever it uses), record the
+  `format` (e.g. `ini`, `json-flat`), the section headers and the exact KEY names — never the reference's
+  VALUES. The code stage generates each config file in this format with THIS solution's values. Read the
+  keys/sections from the reference's actual files; do not paraphrase or invent them.
 - Omit the whole `projectSkeleton` ONLY when there is neither a named reference NOR a sibling to
   model on (a single-project repo, or a genuinely empty one). When a reference IS named it is never
   optional — see below. An absent skeleton asserts nothing; a wrong one blocks a good run.
