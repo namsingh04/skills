@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 11
+version: 14
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-02"
 ---
 
 # Code generation conventions
@@ -77,6 +77,19 @@ spec defines. Genuinely shared code is imported, never duplicated; but in a repo
 projects, reproduce the per-project helpers the convention calls for freshly, and test them to this
 project's coverage floor rather than assuming the reference already did.
 
+**The reference's generic shared-utility modules are PROVIDED to you — call them, do not rewrite
+them.** The convention layer — the reference's logging helpers, its property/SSM/config readers, its
+common utilities and constants (the modules under its `utilities/`, `common/`, `helpers/`, `lib/` or
+`core/` directory) — is reproduced verbatim into this project from the reference before your code is
+validated, so its public API is FIXED and identical to the reference's. Import and call those
+functions by their real names (e.g. `from utilities.log_utils import print_info_logs`); do NOT
+re-implement them, do NOT rename them, and do NOT substitute a different mechanism (for example
+stdlib `logging`) where the reference has its own logging helpers — a caller that invents
+`log_utils.write_log` or falls back to `logger.info` when the house API is `print_info_logs` breaks
+at import time and fails every test. If a shared helper you need is not among the provided modules,
+add it to that same shared module rather than forking a parallel one. This carve-out is only for the
+generic shared-utility layer; every business/domain module is still authored fresh from your spec.
+
 Two different things, and keep them apart: **reproduce the reference's STRUCTURE exactly; author the
 CODE fresh.** The structure — the directory layout captured in `Repo-Profile.json` `projectSkeleton`,
 one config file per environment where the reference has per-environment config, every descriptor and
@@ -93,6 +106,26 @@ split them into several new fine-grained subdirectories the reference does not h
 them together (or vice-versa). The set of directories in your project is the set in the
 `projectSkeleton`, with the same names — no more, no fewer. A tidier structure you prefer is still
 the wrong structure.
+
+**Keep the project's OWN package directory named EXACTLY as the reference names it — do not
+"normalise" it.** The reference lays a project out as `<root>/<name>/<name>/` and the deep dir is put
+on the path so only its CHILDREN (`auth/`, `utilities/`, …) are imported — the deep dir itself is
+never `import`ed by name, so its name is correct as-is and the CI/CD pipeline depends on that exact
+path. This is not just the reference's habit: the standards profile's naming convention makes the
+**project / lambda-function directory `kebab-case` (hyphens)** — `snake_case` is for Python FILES and
+identifiers (`main.py`, `helper_utils.py`, `lambda_handler`), NEVER for the project directory. So do
+NOT rename the package dir to a snake_case identifier (`pace_msg_lambda_…` for `pace-msg-lambda-…`),
+and do not write some files under the reference-named dir and others under a renamed one — that splits
+the project into two half-trees that neither import nor validate. Use the skeleton's exact path for
+every file you write.
+
+**Folder structure comes from BOTH sources — take the UNION.** The set of directories and required
+files is the `projectSkeleton` (the reference's exact layout) TOGETHER WITH the `Standards-Profile`'s
+`folderStructure` / `requiredFiles` when a standards document is present. Where the standard requires a
+file the reference does not carry (for example a `Dockerfile`), you still produce it — the standard
+outranks the repository. Where the reference carries per-environment `setup/`+`properties/` the standard
+does not enumerate, you still produce those. Neither source alone is the whole structure; the project
+must satisfy both.
 
 ## No placeholders
 
@@ -125,6 +158,17 @@ if the fileMap or the repo's `projectSkeleton` names it, produce it with real co
 empty directory and moving on is not "done" — an empty folder is never committed, and the run fails
 the existence gate. A missing config file breaks a deploy exactly as a missing module breaks an
 import.
+
+**Per-environment config: same KEYS as the reference, VALUES for the project you are building.**
+The reference's `properties/*.properties` and `setup/*_setup.json` (or whatever per-env config the
+`projectSkeleton` carries) define the exact key schema and file shape the CI/CD pipeline consumes —
+that schema is the convention, so produce the SAME keys, in the same files, for every environment the
+reference has. READ the reference's config to learn what each key is, then set the VALUE for THIS
+solution from the `Solution-Model`, the `Standards-Profile` and the `Repo-Profile` — the queue names,
+endpoints, ARNs, roles and toggles this project needs. Never copy the reference's own values (they
+belong to the reference's service), and never hardcode a value the inputs do not support — if a
+required value is genuinely absent, raise it as a gap. Same keys as the reference; values for the
+project being built.
 
 ## Record what you wrote
 

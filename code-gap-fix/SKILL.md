@@ -1,9 +1,9 @@
 ---
 name: "code-gap-fix"
 description: "Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure."
-version: 1
+version: 3
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-09-02"
 ---
 
 # Code gap fix
@@ -19,6 +19,15 @@ problem and breaks something else costs the run.
 `40-codegen/Code-Validation.json` lists them, each with a file, a line, a problem and the
 verbatim failure output. `50-validation/Validation-Result.json` has the raw command output.
 
+**Also read `40-codegen/Convention-Findings.json` if it exists.** A deterministic conventions gate
+writes named findings there when the generated project violates a house convention this workflow has
+already learned — a per-environment config file missing the reference's key schema, a public symbol the
+callers use but the module does not define, a package directory renamed away from the reference. Treat
+each as a finding exactly like a validation finding: repair it against the reference and the spec (for a
+config-key gap, add the reference's keys with values drawn from the `Solution-Model` / `Standards-Profile`
+/ `Repo-Profile`, never the reference's own values and never hardcoded). These are known regressions with
+known fixes; resolve them rather than dismissing them.
+
 For each finding, before touching anything:
 
 1. Read the file. The whole file, not the reported line.
@@ -29,12 +38,22 @@ For each finding, before touching anything:
 |---|---|
 | The implementation contradicts the spec | Fix the implementation. |
 | The implementation matches the spec, but the spec is wrong | Do **not** fix either. Raise a gap and report `PARTIAL`. |
+| The implementation calls a symbol/attribute of its OWN modules that does not exist, or returns a shape the test asserts on | Fix the implementation. **This is a real defect, never "test infrastructure."** |
 | The test asserts something no fixture supports | Fix the test, citing the fixture. |
 | The command was wrong for this repository | Not a code defect. Report it; do not change code. |
 | The process was killed (exit 137, timeout, no output) | Environment. Report it; do not change code. |
 
 The last two are where retries get wasted. A fixer told "tests failed" that starts rewriting
 working code has turned an environment problem into a code problem.
+
+**Do not mis-file a real defect as "test infrastructure" to close the run.** An `AttributeError`,
+`ImportError`, or `NameError` naming one of the project's OWN modules or functions (e.g. `module
+'utilities.log_utils' has no attribute 'print_info_logs'`), or a `KeyError` on a response field the
+spec defines (e.g. `statusCode`), means the implementation is calling an API it never provides or
+returning the wrong shape — that is an implementation defect on row 1, and you fix it. A mock that
+patches a non-existent attribute is a symptom of the same missing symbol, not a reason to dismiss the
+test. If you genuinely run out of budget with such findings open, they go in `unfixed` with
+`retryable: true` and you report `PARTIAL` — never a green report over a red suite.
 
 ## Minimal changes
 
