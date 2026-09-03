@@ -1,9 +1,9 @@
 ---
 name: "integration-contract-design"
 description: "Specify every boundary the system talks over as request shape, response shape, error behaviour and a concrete sample exchange, and emit the test fixtures that make those contracts testable. Use in the specification stage for interfaces and integrations."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-03"
 ---
 
 # Integration contract design
@@ -24,6 +24,11 @@ This is half the contract and it is usually the half that is missing.
 
 Each part cites a requirement or a source. A field you added because it seemed useful is a
 field somebody else's system does not send.
+
+When `00-inputs/Standards-Profile.json` is present, its mandatory rules for boundaries — error
+handling, retry/backoff, timeouts, logging, auth — are authoritative (authority chain: solution >
+standards > jira > repository). Fold them into the relevant contract's error behaviour and cite the
+rule id; take the values from the profile, never hardcode them.
 
 ## Sample exchanges become the tests
 

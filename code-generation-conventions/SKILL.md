@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 15
+version: 16
 created: "2026-08-20"
-updated: "2026-09-02"
+updated: "2026-09-03"
 ---
 
 # Code generation conventions
@@ -144,7 +144,9 @@ must satisfy both.
 - **`properties/` + `setup/` follow the standards config convention.** Their keys, file set and format
   come from the `Standards-Profile` (its `properties` schema / `configurationFileStructure`) and the
   reference; fill the VALUES for THIS solution — same keys as the convention, values for this project,
-  never the reference's values and never hardcoded.
+  never the reference's values and never hardcoded. **If the spec's config unit is silent or contradicts
+  the standard** (a spec written before the standard was bound), the `Standards-Profile` config schema
+  WINS — apply the standard's keys/sections/format anyway; standards outrank a repository-derived unit.
 
 ## No placeholders
 

@@ -1,9 +1,9 @@
 ---
 name: "infrastructure-resource-design"
 description: "Turn requirements and the tables that accompany them - IAM policies, VPC and network settings, resource configuration - into a resource specification where every resource, permission and boundary traces to a source row. Use in the specification stage for infrastructure work."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-03"
 ---
 
 # Infrastructure resource design
@@ -120,6 +120,14 @@ Your `logicalName` values and `configurationInputs` names are what the code agen
 verbatim. Choose them once, per the standards profile's naming rules, and do not restate the
 same resource under two names in different parts of the file — a validator will catch it, but
 only after a retry that could have been avoided.
+
+**Per-environment config follows the STANDARD's schema.** When `00-inputs/Standards-Profile.json`
+is present, the per-environment configuration you specify (`properties/*.properties`,
+`setup/*_setup.json`, or whatever the standard names) must carry the standard's config SCHEMA —
+its exact keys, sections and format — for EVERY environment the reference/skeleton lists, with the
+environment-specific values resolved from the Solution-Model / Standards-Profile / Repo-Profile,
+never hardcoded and never the reference's own values. A config file that invents a flat shape or
+drops the standard's required keys is the defect this exists to prevent.
 
 ## Status
 

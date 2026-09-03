@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 8
+version: 9
 created: "2026-08-20"
-updated: "2026-09-01"
+updated: "2026-09-03"
 ---
 
 # Implementation specification
@@ -190,6 +190,14 @@ solution design **loses** — record that as a gap, never silently apply it. Fol
 mandatory rules into `units`, `fileMap` and `constraintsObserved` (cite the rule id); a mandatory
 rule you cannot specify a way to meet is itself a gap. When the file is absent, the repository is the
 standard exactly as before — this whole paragraph is a no-op.
+
+**In particular, specify the CONFIG the standard defines — this is where a standards-blind spec leaks
+into wrong code.** For every per-environment config file the fileMap lists (`properties/*.properties`,
+`setup/*_setup.json`, or whatever the standard names), the unit MUST state the standard's config SCHEMA
+— the exact keys, sections and format each file carries, and which values are environment-specific — so
+the code stage generates config that matches the standards document, not an invented flat shape. The
+folder structure and file set in the fileMap are the UNION of the `projectSkeleton` and the standards
+`folderStructure`/`requiredFiles`. Take keys and structure from the profiles; do not hardcode them.
 
 `assumptions` records every default you proceeded on. Each one should have a gap id, and each
 one appears in the run summary — this is how a reviewer finds the decisions nobody made.
