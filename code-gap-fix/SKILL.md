@@ -1,9 +1,9 @@
 ---
 name: "code-gap-fix"
 description: "Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-09-02"
+updated: "2026-09-04"
 ---
 
 # Code gap fix
@@ -26,16 +26,27 @@ with known fixes; resolve them rather than dismissing them:
 - **CONV-004 / CONV-005 / CONV-009 (config):** a per-env `properties/`/`setup/` file is missing or lacks
   the standard's key schema — add the reference/standards keys with values drawn from the `Solution-Model`
   / `Standards-Profile` / `Repo-Profile`, never the reference's own values and never hardcoded.
-- **CONV-006 (tests mis-levelled):** move the test dir under the package root (the dir with `main.py`) so
-  validation collects it.
-- **CONV-007 (flat business logic):** move the business modules that sit flat beside `main.py` into the
-  project's domain subfolder (named for THIS project, never the reference's name), updating imports.
+- **CONV-006 (tests mis-created):** tests must be AUTHORED at the co-located path — inside the package root
+  (the dir with `main.py`), mirroring the source tree, in the reference's test-dir name. If a test is not
+  there, that is a SOURCE defect in how it was generated, NOT something to repair by moving files. Do NOT
+  move, rename, or relocate any existing test directory — least of all another project's. Report it as
+  unfixed/`PARTIAL` so the authoring path is corrected; never relocate to satisfy it.
+- **CONV-007 (flat business logic):** business modules belong in the project's own domain subfolder and must
+  be AUTHORED there. Do NOT relocate existing files to fix this — it is a SOURCE defect (the spec's
+  `targetPath` / the code agent placed them flat). Report it as unfixed/`PARTIAL` so placement is corrected
+  at authoring, rather than moving files after the fact.
 - **CONV-008 (dead code / extra):** remove a module the project imports nowhere ONLY after confirming it
   traces to NO spec requirement — never delete something a requirement needs; if unsure, report it, do
   not delete. Likewise remove an unrequested feature or a duplicate of a provided utility.
 - **CONV-010 (reference-token leak):** rename any path or identifier carrying the reference's distinctive
   name to a project-appropriate name.
 Repair against the reference and the spec, and generate neither more nor less than the requirement.
+
+**Never move, rename, or relocate an existing file to correct its PATH.** Correct placement is guaranteed
+when a file is CREATED (skeleton → spec `targetPath` → the code agent), so a placement finding (CONV-006
+tests, CONV-007 flat business) is a source-authoring defect to REPORT, not to repair by moving files —
+relocating generated trees is exactly what corrupted sibling projects before. Only CONTENT defects (a wrong
+body, a missing config key, a dead/duplicate module, a leaked reference name) are repaired here.
 
 For each finding, before touching anything:
 

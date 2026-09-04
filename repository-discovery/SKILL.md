@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 12
+version: 13
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -110,10 +110,19 @@ because nothing bound the code stage to the repo's shape. The repository held ~4
 lambdas, every one of them carrying its own `requirements.txt` on an identical path. That
 inventory was the answer, and it was never recorded.
 
+**The TARGET project name comes from `00-inputs/Solution-Model.json` `targetProject.name`, NEVER from a
+folder you find in the repository.** Read it first. The `layout` you record is `<sourceRoot>/<targetProject.name>`
+(the doubled `<name>/<name>/` where that is the repo's convention). A repository can contain a folder of
+a DIFFERENT name that a previous run left behind — that folder is an unrelated SIBLING, a candidate to
+model on, but it is NEVER the target. Confusing a stale sibling for the target makes every downstream
+stage build into the wrong folder. If `targetProject.name` is empty, the target is unknown — raise a gap,
+do not adopt a repo folder as the target.
+
 When the target is a new project among siblings that share a layout, find the **nearest sibling**
-— the existing project most structurally similar to the one being added — and record its file
-inventory as a `projectSkeleton`. This makes "the config is present" a checkable condition the
-later stages and the pre-commit gate enforce, in ANY language, without hard-coding filenames.
+— the existing project most structurally similar to the one being added (its name is NOT the target's) —
+and record its file inventory as a `projectSkeleton`, retargeted to the target name. This makes "the
+config is present" a checkable condition the later stages and the pre-commit gate enforce, in ANY
+language, without hard-coding filenames.
 
 ```json
 "projectSkeleton": {
