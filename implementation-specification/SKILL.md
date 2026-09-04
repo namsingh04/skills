@@ -1,7 +1,7 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 10
+version: 11
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -166,22 +166,27 @@ the model across multiple files, and do not trim its content to fit one call.
 believed it was creating overwrites work, and that failure is not recoverable from within the
 run.
 
-**The `fileMap` must list EVERY file the finished project needs — not only the behavioural
-modules.** `Repo-Profile.json` `projectSkeleton` is the checklist, and when the solution names a
-reference project the skeleton is that reference's COMPLETE inventory. Every `requiredDir` and
-`requiredFile` it records — one entry per environment where the reference has per-environment config,
-every descriptor/sample directory, every manifest, every helper the reference carries — becomes its
-own `create` entry with a `purpose`. A code agent only writes what the fileMap names; a file the map
-omits ships as an empty directory and fails the existence gate; per-environment files collapsed into
-one, or a dir the reference has left empty, are the same failure. Take the exact set from the
-profile — name no file from assumption. Do NOT add files the reference does not have.
+**The `fileMap` has two kinds of entries — and mixing them up is the "stale reference code" defect.**
+1. **STRUCTURAL CONVENTION files — reproduce from the skeleton.** The manifest, the entry point, one
+   per-environment config file per environment the reference has (`properties/<env>`, `setup/<env>`),
+   every descriptor/sample directory, the test directory — the files EVERY sibling of this shape carries.
+   These come from `projectSkeleton` one-to-one: if the reference has per-env config across four
+   environments, the fileMap has four entries, never one "representative". These are the project's SHAPE.
+2. **BUSINESS + UTILITY modules — DESIGN from the SOLUTION, not the reference.** Every other module is
+   derived from the Solution-Model's components (component + responsibility + relationships → a module),
+   placed in packages the SOLUTION needs — which may be packages the reference does NOT have (e.g.
+   `bsp/infobip/`, `channel_adapter/`, `persistence/`). **A reference business/utility module
+   (`utilities/dynamo_utils.py`, `ssm_utils.py`, a reference domain package) is NOT the project's file:
+   spec it ONLY if a solution module actually needs it.** The reference's utility *set* is a naming/API
+   CONVENTION (if the solution needs logging, name it the reference's way), never a file list to copy.
 
-**Copy `projectSkeleton.requiredFiles` into `fileMap` ONE-TO-ONE.** If the skeleton lists a
-per-environment config file across four environments, the fileMap has four entries — never one
-"representative" file with the others implied. If the `projectSkeleton` is missing but the solution
-names a reference, do NOT proceed on a single environment: read the reference on disk (or list what
-discovery captured) and enumerate its per-environment files yourself first. One environment's config
-standing in for all of them is a defect, not a simplification.
+**Every fileMap entry that is not a structural convention file MUST trace to a solution
+component/requirement.** A module that cites no requirement — a `dynamo_utils.py` the solution never uses
+— is stale by construction and must NOT be in the fileMap. This is the same coverage rule as your
+units: no unit (and no file) without a requirement. Do not "copy the reference's complete inventory"; copy
+its convention files and DESIGN the rest. If `projectSkeleton` is missing but a reference is named,
+enumerate the reference's per-env config files yourself first (one environment standing in for all is a
+defect), but still design the business modules from the solution.
 
 **When `00-inputs/Standards-Profile.json` is present, it is an authoritative standards source.**
 Apply the authority chain **solution doc > standards > jira > repository**: a `mandatory` rule in the

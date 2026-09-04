@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 17
+version: 19
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -90,22 +90,23 @@ reference's). Match the reference's public names; generate everything behind the
 helper (`config_reader` beside the profiled `prop_reader`) and do not substitute stdlib `logging` where
 the profiled API is `print_info_logs`.
 
-Two different things, and keep them apart: **reproduce the reference's STRUCTURE exactly; author the
-CODE fresh.** The structure — the directory layout captured in `Repo-Profile.json` `projectSkeleton`,
-one config file per environment where the reference has per-environment config, every descriptor and
-sample directory it carries, and NO files it does not have (no invented modules, no extra package
-markers) — is copied faithfully, because a reviewer expects this project to sit next to the reference
-and look like it. The bodies inside those files are written for THIS spec. Collapsing several
-per-environment files into one, or scattering the layout across a different shape, is as wrong as
-cloning the logic — both make the project fail to match the reference it was told to follow. Name no
-specific folder or file from your own knowledge; take the exact set from the profile.
+Two different things, and keep them apart: **follow the reference's LAYOUT PATTERN; build the SOLUTION's
+architecture inside it.** From the reference you take the CONVENTION: the doubled `<name>/<name>/` layout,
+one config file per environment where it has per-env config, the manifest/entry-point/descriptor/test-dir
+shape, the naming style, and the config-indirection idiom — this is why the project looks like it sits
+next to the reference. But the PACKAGES and MODULES are the SOLUTION's, from the spec's fileMap, which the
+spec derived from the Solution-Model's components — they may be packages the reference does NOT have
+(`bsp/infobip/`, `channel_adapter/`, `persistence/`), and you MUST create those. You do NOT reproduce the
+reference's business/utility modules (`utilities/dynamo_utils.py`, its domain packages) unless the fileMap
+names them because the solution uses them. Write exactly the files the fileMap lists — every one, at its
+`targetPath` — and no file it does not list; the fileMap, not the reference's inventory, is the file set.
 
-**Use the reference's OWN directory names — do not invent your own taxonomy.** If the reference
-groups its helpers under one directory, your helpers go in a directory of that same name; do not
-split them into several new fine-grained subdirectories the reference does not have when it keeps
-them together (or vice-versa). The set of directories in your project is the set in the
-`projectSkeleton`, with the same names — no more, no fewer. A tidier structure you prefer is still
-the wrong structure.
+**Follow the reference's NAMING STYLE, but the SET of packages is the solution's (from the fileMap).**
+Name a package the reference's way (its casing, its granularity idiom — helpers grouped vs split) and use
+the reference's dir name where the solution has the same concept (`utilities/`, `test/`). Do not invent a
+gratuitously different taxonomy for something the reference already names — but DO add the packages the
+solution's architecture requires that the reference lacks. The directory set = the fileMap's directories
+(the solution's design in the reference's style), not a copy of the reference's own directories.
 
 **Keep the project's OWN package directory named EXACTLY as the reference names it — do not
 "normalise" it.** The reference lays a project out as `<root>/<name>/<name>/` and the deep dir is put
@@ -138,8 +139,10 @@ must satisfy both.
   package must NOT be written flat at the package root.
 - **Tests live WITH the package**, in the reference's test directory name from the skeleton (e.g. `test/`
   when the reference uses `test/`, not an invented `tests/`), at the same level as `main.py` — validation
-  runs in the package root and will not collect
-  tests placed elsewhere.
+  runs in the package root and will not collect tests placed elsewhere. **Mirror the source tree inside
+  the test dir** the way the reference does: a module at `bsp/infobip/infobip_adapter.py` is tested at
+  `test/bsp/infobip/test_infobip_adapter.py`, not a flat `test/test_infobip_adapter.py`, when the
+  reference nests its tests.
 - **Nothing extra, nothing missing.** Write exactly what the spec/requirement asks: no unrequested
   feature (e.g. a delete-SQS path nobody asked for), no second helper that duplicates a provided utility
   (`config_reader` beside `prop_reader`, `structured_logger` beside `log_utils`), and no module the
@@ -217,11 +220,12 @@ repository). Resolve it against the checkout, so on disk each file lands at
 directory, not part of the repo layout; staging strips it, so the committed path is exactly the
 fileMap path. Concretely:
 
-- **The `src/` checkout is a SIBLING of `workflow_output`, not a child of it.** Both sit directly under
-  the run root: `<run-root>/src/` (the repo) and `<run-root>/workflow_output/` (where your stage
-  outputs go). Use the **absolute checkout path** you were handed. If all you have is the "proven dir",
-  it ends in `/workflow_output`, so the checkout is its sibling — `<proven dir>/../src` — never a
-  `src/` created *inside* `workflow_output`.
+- **The checkout path is DETERMINISTIC — read it, do not compute it.** It is the `checkout` field of
+  `<proven dir>/_run/run-config.json` (written by the init step as `<runRoot>/src`, the absolute cloned-repo
+  path). Use that value verbatim as the base for every file you write. Do NOT derive `<run-root>/src` from
+  the proven dir yourself — the proven dir IS `<run-root>/workflow_output`, and computing "`<run-root>/src`"
+  from it is exactly what produced `workflow_output/src`. The checkout is a SIBLING of `workflow_output`,
+  never a child of it.
 - **DO** write at `<checkout>/<fileMap path>` — join the repo-relative fileMap path onto the absolute
   checkout path (or `cd` into the checkout first).
 - **DO NOT** write at `<run-root>/workflow_output/src/<fileMap path>`. That is the exact failure seen on

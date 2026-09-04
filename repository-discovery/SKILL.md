@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 11
+version: 12
 created: "2026-08-20"
 updated: "2026-09-03"
 ---
@@ -136,8 +136,14 @@ later stages and the pre-commit gate enforce, in ANY language, without hard-codi
 }
 ```
 
-- `requiredFiles` are the files EVERY sibling has (by basename) — the manifest and entry point,
-  not project-specific modules. Two siblings sharing a file makes it a convention; one does not.
+- `requiredFiles` is the STRUCTURAL skeleton only — the files that define a project's SHAPE and that
+  every sibling of this kind carries: the manifest, the entry point, the per-environment config files
+  (`properties/<env>`, `setup/<env>`), descriptors, and the test directory. It is NOT a list of the
+  reference's business or utility MODULES. A shared utility (`log_utils.py`, `dynamo_utils.py`) is
+  recorded in `utilityApi` (below) as an API convention — NOT in `requiredFiles` — because the code stage
+  creates it only if a solution module needs it; forcing it into `requiredFiles` ships stale code (a
+  `dynamo_utils.py` in a project that never uses DynamoDB). Two siblings sharing a STRUCTURAL file makes
+  it a convention; a shared utility module is a pattern, not a required file.
 - **`utilityApi` PROFILES the reference's shared-utility modules for their PUBLIC API only** — for each
   module under the reference's `utilities/`/`common/`/`helpers/`/`lib/`/`core/` dir, list its public
   function/class NAMES and signatures (read them from the file), NOT its bodies or values. This is the

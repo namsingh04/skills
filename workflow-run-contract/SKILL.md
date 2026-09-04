@@ -1,7 +1,7 @@
 ---
 name: "workflow-run-contract"
 description: "The file contract every agent in this workflow obeys - where to read, where to write, the output envelope, the status values, the upstream gate, and the resume rule. Attached to every agent node. Load this before doing any stage work."
-version: 6
+version: 7
 created: "2026-08-20"
 updated: "2026-09-01"
 ---
@@ -90,6 +90,12 @@ inside the `src` checkout.** If you ever find yourself writing to `src/workflow_
 resolved a relative path against the wrong directory: use the absolute `outputRoot` from
 `_run/run-config.json` (or the absolute path you were handed) instead. The only thing that belongs
 inside `src` is the code this run must commit.
+
+**Two absolute bases, both in `_run/run-config.json`, never computed by hand:** `outputRoot`
+(`<runRoot>/workflow_output`) is where stage RECORDS go; `checkout` (`<runRoot>/src`) is where GENERATED
+CODE goes. They are siblings. A code agent writes its source at `<checkout>/<fileMap path>` and its
+envelope at `<outputRoot>/<stage>/<file>` — read both from run-config; do NOT derive `<runRoot>/src` from
+the output root (that yields `workflow_output/src`, off the checkout, the exact bug this prevents).
 
 **Your runtime may tell you to keep newly created files inside `src/`.** That instruction is about
 the repository CODE you generate for the commit. It does NOT apply to your stage-output envelope: that
