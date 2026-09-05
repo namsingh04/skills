@@ -1,9 +1,9 @@
 ---
 name: "code-gap-fix"
 description: "Repair generated code against specific validation findings - minimal targeted changes, re-verified, without rewriting what already passed. Use by the code fix agent after a validation failure."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-09-04"
+updated: "2026-09-05"
 ---
 
 # Code gap fix
@@ -26,6 +26,17 @@ with known fixes; resolve them rather than dismissing them:
 - **CONV-004 / CONV-005 / CONV-009 (config):** a per-env `properties/`/`setup/` file is missing or lacks
   the standard's key schema — add the reference/standards keys with values drawn from the `Solution-Model`
   / `Standards-Profile` / `Repo-Profile`, never the reference's own values and never hardcoded.
+- **CONV-011 (config key-schema drift):** the file has the WRONG shape — rebuild it to the TEMPLATE's exact
+  key set and format (the finding lists the template keys; the authority order is solution config schema →
+  `Standards-Profile.configSchema` → the reference lambda's own config file of that kind). Keep only the
+  template's keys, drop invented ones (e.g. an AWS-SDK `event-source`/`tags` block, a dotted `x.y.z=`
+  properties key), and fill each key's VALUE from the `Solution-Model` for THIS environment — a value no
+  input provides becomes a `TODO` placeholder raised as a gap. Same keys everywhere; only values change.
+- **CONV-012 (public-API mismatch / `cannot import name`):** a test (or module) imports a symbol its target
+  module does not define — the two sides disagree on the public API. Reconcile the NAMES against the spec's
+  declared API (the unit's `utilityApi` / public interface): make the implementation module export the exact
+  symbol the caller imports, or correct the caller to the implemented name — whichever matches the spec.
+  Do not delete the test or stub an empty symbol to silence the import; the callable must actually work.
 - **CONV-006 (tests mis-created):** tests must be AUTHORED at the co-located path — inside the package root
   (the dir with `main.py`), mirroring the source tree, in the reference's test-dir name. If a test is not
   there, that is a SOURCE defect in how it was generated, NOT something to repair by moving files. Do NOT

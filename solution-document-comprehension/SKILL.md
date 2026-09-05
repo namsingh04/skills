@@ -1,7 +1,7 @@
 ---
 name: "solution-document-comprehension"
 description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
-version: 3
+version: 4
 created: "2026-08-20"
 updated: "2026-09-05"
 ---
@@ -152,14 +152,13 @@ Write `00-inputs/Solution-Model.json`. In `payload`:
 
 **`targetProject` names the project this run BUILDS, and it is REQUIRED — extract it, do not infer it.**
 The solution document is the HIGHEST authority for where code goes and how it is laid out; capture that
-here so no downstream stage has to guess. The document states the target: the main Lambda / function /
-service / folder it is a design for (e.g. a heading or a line like
-"pace-lambda-msg-infobip-channel-response-adapter (main Lambda)", a "Folder Location", "Repository",
-"Function Name" or "Project Name" field). Record:
+here so no downstream stage has to guess. The document states the target: the main function / service / job /
+folder it is a design for (a heading, or a "Folder Location", "Repository", "Function Name" or "Project
+Name" field naming it). Record:
 - `name` — the target's exact repository folder name (the project the document is ABOUT). It is almost
   always the most-repeated project name in the document. Do not confuse it with a `reference` the document
   says to MODEL ON — the reference is a different project (see below).
-- `sourceRoot` — the parent directory in the repo (e.g. `pace-lambda`) when stated.
+- `sourceRoot` — the parent directory in the repo where sibling projects of this kind live, when stated.
 - `reference` — ONLY when the document explicitly designates an existing project as a reference
   implementation / structural template to model on (e.g. a "Reference Implementation" section naming
   another Lambda). This is the model, NEVER the target.

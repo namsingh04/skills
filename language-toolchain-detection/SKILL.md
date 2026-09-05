@@ -1,9 +1,9 @@
 ---
 name: "language-toolchain-detection"
 description: "Determine a repository's language, package manager, and install/build/test/lint commands from its own manifests, and record them as a profile every other stage reads. The single place in this workflow where any language is named. Use before generating or validating code."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-08-31"
+updated: "2026-09-05"
 ---
 
 # Language and toolchain detection
@@ -164,11 +164,11 @@ file is absent this section is a no-op and detection is exactly as above.
 
 ## A monorepo has no manifest at its root
 
-This is common and it is the case that has already cost a run. On 2026-08-20 a repository of
-some forty Python projects under `pace-glue/` and `pace-lambda/` -- each with its own
-`requirements.txt`, none at the top -- was profiled as `language: unknown`. Nothing was
+This is common and it is the case that has already cost a run. On 2026-08-20 a monorepo of
+some forty projects under a couple of top-level directories -- each with its own dependency
+manifest, none at the repo root -- was profiled as `language: unknown`. Nothing was
 installed, every validation check was skipped, and the run generated 22 files including 8
-pytest files that were never executed. It reported success.
+test files that were never executed. It reported success.
 
 So when the checkout root holds no manifest, **do not conclude the language is unknown.** Look
 one to four levels down for project roots, skipping `node_modules`, `.venv`, `site-packages`,
@@ -186,7 +186,7 @@ the generated files are the only artifact that knows where the run actually wrot
 
 **Do not prune directories by build-output name.** `dist`, `build`, `target`, `out` and `bin`
 are ordinary project names in a monorepo. Pruning them by name lost a real project in testing:
-the container `pace-lambda/target/` matched, and the project at `pace-lambda/target/target/`
+a container directory matched a build-output name and the doubled project dir nested inside it
 was never reached. Prune only what is never a project root and always enormous.
 
 When you correct the profile as RepositoryDiscoveryAgent, keep `candidateRoots` — a later stage

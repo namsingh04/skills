@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 19
+version: 20
 created: "2026-08-20"
-updated: "2026-09-03"
+updated: "2026-09-05"
 ---
 
 # Code generation conventions
@@ -80,25 +80,23 @@ project's coverage floor rather than assuming the reference already did.
 **The reference's shared utilities are PROFILED for their API — you IMPLEMENT them for THIS solution,
 you do NOT copy them.** `Repo-Profile.json` records, for each shared-utility module (the modules under
 the reference's `utilities/`, `common/`, `helpers/`, `lib/` or `core/` directory), its PUBLIC API — the
-exact function/class names and signatures the reference exposes (e.g. `log_utils.print_info_logs`,
-`prop_reader.get_property`). That API is the CONTRACT: implement each utility module in THIS project with
-those SAME public names and signatures, so every caller (`from utilities.log_utils import
-print_info_logs`) resolves and no test breaks on a renamed symbol. But the BODIES are yours to write for
-this solution — do NOT copy the reference's file contents, and do NOT carry across values that are the
-reference's (a `constant.py` gets THIS solution's constants, from the Solution-Model, never the
-reference's). Match the reference's public names; generate everything behind them. Do not fork a parallel
-helper (`config_reader` beside the profiled `prop_reader`) and do not substitute stdlib `logging` where
-the profiled API is `print_info_logs`.
+exact function/class names and signatures the reference exposes. That API is the CONTRACT: implement each
+utility module in THIS project with those SAME public names and signatures, so every caller resolves by the
+profiled name and no test breaks on a renamed symbol. But the BODIES are yours to write for this solution —
+do NOT copy the reference's file contents, and do NOT carry across values that are the reference's (a
+constants module gets THIS solution's constants, from the Solution-Model, never the reference's). Match the
+reference's public names; generate everything behind them. Do not fork a parallel helper beside a profiled
+one, and do not substitute a language's stdlib API where the profiled utility API is the house convention.
 
 Two different things, and keep them apart: **follow the reference's LAYOUT PATTERN; build the SOLUTION's
 architecture inside it.** From the reference you take the CONVENTION: the doubled `<name>/<name>/` layout,
 one config file per environment where it has per-env config, the manifest/entry-point/descriptor/test-dir
 shape, the naming style, and the config-indirection idiom — this is why the project looks like it sits
 next to the reference. But the PACKAGES and MODULES are the SOLUTION's, from the spec's fileMap, which the
-spec derived from the Solution-Model's components — they may be packages the reference does NOT have
-(`bsp/infobip/`, `channel_adapter/`, `persistence/`), and you MUST create those. You do NOT reproduce the
-reference's business/utility modules (`utilities/dynamo_utils.py`, its domain packages) unless the fileMap
-names them because the solution uses them. Write exactly the files the fileMap lists — every one, at its
+spec derived from the Solution-Model's components — they may be packages the reference does NOT have, and
+you MUST create exactly the packages the fileMap names. You do NOT reproduce the reference's business or
+utility modules (or its own domain packages) unless the fileMap names them because the solution uses them.
+Write exactly the files the fileMap lists — every one, at its
 `targetPath` — and no file it does not list; the fileMap, not the reference's inventory, is the file set.
 
 **Follow the reference's NAMING STYLE, but the SET of packages is the solution's (from the fileMap).**
@@ -115,8 +113,9 @@ never `import`ed by name, so its name is correct as-is and the CI/CD pipeline de
 path. This is not just the reference's habit: the standards profile's naming convention makes the
 **project / lambda-function directory `kebab-case` (hyphens)** — `snake_case` is for Python FILES and
 identifiers (`main.py`, `helper_utils.py`, `lambda_handler`), NEVER for the project directory. So do
-NOT rename the package dir to a snake_case identifier (`pace_msg_lambda_…` for `pace-msg-lambda-…`),
-and do not write some files under the reference-named dir and others under a renamed one — that splits
+NOT rename the package dir to a snake_case identifier (e.g. swapping hyphens for underscores in the
+skeleton's project-dir name), and do not write some files under the skeleton-named dir and others under a
+renamed one — that splits
 the project into two half-trees that neither import nor validate. Use the skeleton's exact path for
 every file you write.
 
@@ -140,21 +139,21 @@ must satisfy both.
 - **Tests live WITH the package**, in the reference's test directory name from the skeleton (e.g. `test/`
   when the reference uses `test/`, not an invented `tests/`), at the same level as `main.py` — validation
   runs in the package root and will not collect tests placed elsewhere. **Mirror the source tree inside
-  the test dir** the way the reference does: a module at `bsp/infobip/infobip_adapter.py` is tested at
-  `test/bsp/infobip/test_infobip_adapter.py`, not a flat `test/test_infobip_adapter.py`, when the
+  the test dir** the way the reference does: a module at `<package>/<sub>/<module>.py` is tested at
+  `<testdir>/<package>/<sub>/test_<module>.py`, not a flat `<testdir>/test_<module>.py`, when the
   reference nests its tests.
 - **Nothing extra, nothing missing.** Write exactly what the spec/requirement asks: no unrequested
-  feature (e.g. a delete-SQS path nobody asked for), no second helper that duplicates a provided utility
-  (`config_reader` beside `prop_reader`, `structured_logger` beside `log_utils`), and no module the
-  project never imports. Equally, drop nothing the requirement needs. When you consume an external
-  response, capture it to match the sample response's actual shape, not an assumed one.
-- **`properties/` + `setup/` — GENERATE per the solution, in the reference's config FORMAT (profiled),
-  never copied.** `Repo-Profile.json` records the reference config SCHEMA per environment: the section
-  headers (e.g. a `[ssm]` INI section for `.properties`), the exact key names, and the file format (INI
-  vs the hyphenated-key flat JSON of `_setup.json`). Produce each `properties/<env>.properties` and
-  `setup/<env>_setup.json` in that SAME format with those SAME keys, but with the VALUES for THIS solution
-  taken from the `Solution-Model` (endpoints, ARNs, env config, mock data) — never the reference's values,
-  never an AWS-SDK/CloudFormation shape or an `UPPER_SNAKE` flat file you invented, and never hardcoded.
+  feature nobody asked for, no second helper that duplicates a utility the project already provides, and no
+  module the project never imports. Equally, drop nothing the requirement needs. When you consume an
+  external response, capture it to match the sample response's actual shape, not an assumed one.
+- **Per-environment config — GENERATE per the solution, in the config SCHEMA the profile records, never
+  copied.** The config key schema is taken by the authority chain solution → standards → reference:
+  `Standards-Profile.json` `configSchema` when the standards define one, else `Repo-Profile.json`'s
+  reference config SCHEMA per environment — the section headers, the exact key names, and the file format
+  (whatever the authority actually uses). Produce each per-env config file in that SAME format with those
+  SAME keys, but with the VALUES for THIS solution taken from the `Solution-Model` (endpoints, ARNs, env
+  config, mock data) — never the reference's values, never a differently-shaped file you invented, and
+  never hardcoded.
   The format is the reference's (profiled); the content is the solution's (generated).
 
 ## No placeholders

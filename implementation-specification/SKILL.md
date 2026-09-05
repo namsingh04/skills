@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 11
+version: 12
 created: "2026-08-20"
-updated: "2026-09-03"
+updated: "2026-09-05"
 ---
 
 # Implementation specification
@@ -174,14 +174,19 @@ run.
    environments, the fileMap has four entries, never one "representative". These are the project's SHAPE.
 2. **BUSINESS + UTILITY modules — DESIGN from the SOLUTION, not the reference.** Every other module is
    derived from the Solution-Model's components (component + responsibility + relationships → a module),
-   placed in packages the SOLUTION needs — which may be packages the reference does NOT have (e.g.
-   `bsp/infobip/`, `channel_adapter/`, `persistence/`). **A reference business/utility module
-   (`utilities/dynamo_utils.py`, `ssm_utils.py`, a reference domain package) is NOT the project's file:
-   spec it ONLY if a solution module actually needs it.** The reference's utility *set* is a naming/API
-   CONVENTION (if the solution needs logging, name it the reference's way), never a file list to copy.
+   placed in the packages the SOLUTION's own architecture names — which may be packages the reference does
+   NOT have. **The package division is `projectSkeleton.solutionPackages` when present** — the deterministic
+   derivation records it there from the solution (its stated structure / components) by the authority chain
+   solution → standards → reference; CREATE exactly those packages and place each component's module in its
+   package. When it is absent, read the division from the solution yourself: one package per component/domain
+   the solution describes, named as the solution names it (never a package name copied from the reference or
+   invented).
+   **A reference business/utility module is NOT the project's file: spec it ONLY if a solution module
+   actually needs it.** The reference's utility *set* is a naming/API CONVENTION (if the solution needs a
+   shared helper the reference also has, match the reference's name/API for it), never a file list to copy.
 
 **Every fileMap entry that is not a structural convention file MUST trace to a solution
-component/requirement.** A module that cites no requirement — a `dynamo_utils.py` the solution never uses
+component/requirement.** A module that cites no requirement — a reference utility the solution never uses
 — is stale by construction and must NOT be in the fileMap. This is the same coverage rule as your
 units: no unit (and no file) without a requirement. Do not "copy the reference's complete inventory"; copy
 its convention files and DESIGN the rest. If `projectSkeleton` is missing but a reference is named,

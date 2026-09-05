@@ -1,7 +1,7 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 14
+version: 15
 created: "2026-08-20"
 updated: "2026-09-05"
 ---
@@ -141,15 +141,14 @@ language, without hard-coding filenames.
   "requiredFiles": ["<manifest, e.g. the sibling's dependency file>", "<entry point>"],
   "requiredDirs": ["<dirs every sibling has>"],
   "utilityApi": [
-    {"module": "utilities/log_utils.py",
-     "publicSymbols": ["print_info_logs(message)", "print_error_logs(message)"]}
+    {"module": "<a shared-utility module path read from the reference>",
+     "publicSymbols": ["<public function/class names + signatures read from that file>", "..."]}
   ],
   "configSchema": [
-    {"file": "properties/<env>.properties", "format": "ini",
-     "sections": {"ssm": ["oauth-token-url", "models-api-base-url", "stream-api-base-url"]}},
-    {"file": "setup/<env>_setup.json", "format": "json-flat",
-     "keys": ["name", "runtime", "role", "vpc-config", "handler", "code", "memory-size", "timeout",
-              "source-arn", "environment"]}
+    {"file": "<per-env config file the reference carries>", "format": "<its format, e.g. ini|json-flat>",
+     "sections": {"<section name from the file>": ["<exact key read from the reference's file>", "..."]}},
+    {"file": "<another per-env config file>", "format": "<its format>",
+     "keys": ["<exact top-level keys read from the reference's own file, verbatim>", "..."]}
   ],
   "evidence": ["<path to a sibling file proving the layout>"]
 }
@@ -158,11 +157,11 @@ language, without hard-coding filenames.
 - `requiredFiles` is the STRUCTURAL skeleton only — the files that define a project's SHAPE and that
   every sibling of this kind carries: the manifest, the entry point, the per-environment config files
   (`properties/<env>`, `setup/<env>`), descriptors, and the test directory. It is NOT a list of the
-  reference's business or utility MODULES. A shared utility (`log_utils.py`, `dynamo_utils.py`) is
-  recorded in `utilityApi` (below) as an API convention — NOT in `requiredFiles` — because the code stage
-  creates it only if a solution module needs it; forcing it into `requiredFiles` ships stale code (a
-  `dynamo_utils.py` in a project that never uses DynamoDB). Two siblings sharing a STRUCTURAL file makes
-  it a convention; a shared utility module is a pattern, not a required file.
+  reference's business or utility MODULES. A shared utility module is recorded in `utilityApi` (below) as
+  an API convention — NOT in `requiredFiles` — because the code stage creates it only if a solution module
+  needs it; forcing it into `requiredFiles` ships stale code (a data-store helper in a project that never
+  touches that data store). Two siblings sharing a STRUCTURAL file makes it a convention; a shared utility
+  module is a pattern, not a required file.
 - **`utilityApi` PROFILES the reference's shared-utility modules for their PUBLIC API only** — for each
   module under the reference's `utilities/`/`common/`/`helpers/`/`lib/`/`core/` dir, list its public
   function/class NAMES and signatures (read them from the file), NOT its bodies or values. This is the

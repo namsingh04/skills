@@ -1,7 +1,7 @@
 ---
 name: "standards-document-comprehension"
 description: "Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page."
-version: 3
+version: 4
 created: "2026-08-20"
 updated: "2026-09-05"
 ---
@@ -85,14 +85,14 @@ Write `00-inputs/Standards-Profile.json`. In `payload`:
 naming a validation gate, and the validation stage will run it.
 
 **`configSchema` — surface the per-environment config KEY SCHEMA when the standards document defines
-one.** Standards documents commonly fix the exact shape of the deployment config files a project must
-carry — the `setup/<env>_setup.json` key set (e.g. `name, runtime, role, vpc-config, handler, memory-size,
-timeout, source-arn, environment`, and flags like `shouldProvision`) and the `properties/<env>.properties`
-INI section + key set (e.g. `[config]` with `auth-type, default-region, api-key-secret-name,
-idempotency-table-name`). Record the KEYS, the file format, and the section name exactly as the standard
-states them — **keys and format only, never invented values**. Downstream, the spec stage builds each
-per-env config file with these KEYS and fills VALUES from the solution (authority: solution → standards →
-repository); a value no input provides becomes a `TODO` gap for the human gate. If the standards document
+one.** Standards documents commonly fix the exact shape of the deployment/runtime config files a project
+must carry — a deployment-descriptor file's key set, and a runtime-properties file's section(s) + key set,
+in whatever format and with whatever keys the standard states. Record, for each config file the standard
+describes, its `format`, its section name(s), and its exact KEY names — transcribed verbatim from the
+standard, **keys and format only, never invented and never a value**. Do not carry over key names from any
+example or another project; take only what THIS standards document lists. Downstream, the spec stage builds
+each per-env config file with these KEYS and fills VALUES from the solution (authority: solution → standards
+→ repository); a value no input provides becomes a `TODO` gap for the human gate. If the standards document
 does not define a config schema, leave `configSchema` empty — do not fabricate one.
 
 ## Where standards sit in the authority chain
