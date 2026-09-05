@@ -1,9 +1,9 @@
 ---
 name: "integration-contract-design"
 description: "Specify every boundary the system talks over as request shape, response shape, error behaviour and a concrete sample exchange, and emit the test fixtures that make those contracts testable. Use in the specification stage for interfaces and integrations."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-09-03"
+updated: "2026-09-05"
 ---
 
 # Integration contract design
@@ -105,6 +105,15 @@ infer from which box is drawn on the left.
 ## Output
 
 Write `20-spec/Integration.json` and `20-spec/Test-Fixtures.json`.
+
+**`Test-Fixtures.json` carries every sample exchange verbatim, so it is routinely large — build it in
+CHUNKS with `command_line`, never a single big `write_file`.** A one-shot `write_file` of a large fixtures
+payload is where the tool rejects the oversized argument and leaves a TRUNCATED, unparseable file, which
+fails `Verify Spec` and stops the run before code generation (observed 2026-09-05). Follow the
+`workflow-run-contract` write rule: write the first chunk with a `command_line` heredoc (`cat > <path> <<'EOF'`
+… `EOF`), append each subsequent chunk (`cat >> <path> <<'EOF'` … `EOF`), keep each chunk to roughly a
+screenful, then list the file and confirm it parses. The same applies to `Integration.json` when it is
+large. Never loop on a failing `write_file` — switch to `command_line` immediately.
 
 `Integration.json` payload:
 

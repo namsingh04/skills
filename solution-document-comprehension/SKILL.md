@@ -1,9 +1,9 @@
 ---
 name: "solution-document-comprehension"
 description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-20"
+updated: "2026-09-05"
 ---
 
 # Solution document comprehension
@@ -139,7 +139,7 @@ Write `00-inputs/Solution-Model.json`. In `payload`:
 ```json
 {
   "source": {"type": "confluence|file", "reference": "", "retrievedAt": "", "title": ""},
-  "targetProject": {"name": "", "sourceRoot": "", "reference": "", "source": ""},
+  "targetProject": {"name": "", "sourceRoot": "", "reference": "", "recommendedStructure": [], "source": ""},
   "inventory": [{"heading": "", "kind": "prose|table|diagram|mermaid|sample", "ref": ""}],
   "components": [{"id": "", "name": "", "responsibility": "", "source": ""}],
   "relationships": [{"from": "", "to": "", "kind": "", "label": "", "source": "mermaid"}],
@@ -150,15 +150,27 @@ Write `00-inputs/Solution-Model.json`. In `payload`:
 }
 ```
 
-**`targetProject` names the project this run BUILDS — extract it, do not infer it.** The document
-states the target: the main Lambda / function / service / folder it is a design for (e.g. a heading or a
-line like "pace-lambda-msg-infobip-channel-response-adapter (main Lambda)", a "Folder Location",
-"Repository", "Function Name" or "Project Name" field). Record its exact `name` (the repository folder
-name), its `sourceRoot` (the parent directory in the repo, e.g. `pace-lambda`, when stated), and — only
-if the document explicitly names an existing project to model on — the `reference` name. This is the
-single authority for WHERE the code goes: downstream, the target is THIS name, never a pre-existing
-folder discovered in the repository. If the document does not state a target name, leave it empty and
-raise it as a gap — do not guess.
+**`targetProject` names the project this run BUILDS, and it is REQUIRED — extract it, do not infer it.**
+The solution document is the HIGHEST authority for where code goes and how it is laid out; capture that
+here so no downstream stage has to guess. The document states the target: the main Lambda / function /
+service / folder it is a design for (e.g. a heading or a line like
+"pace-lambda-msg-infobip-channel-response-adapter (main Lambda)", a "Folder Location", "Repository",
+"Function Name" or "Project Name" field). Record:
+- `name` — the target's exact repository folder name (the project the document is ABOUT). It is almost
+  always the most-repeated project name in the document. Do not confuse it with a `reference` the document
+  says to MODEL ON — the reference is a different project (see below).
+- `sourceRoot` — the parent directory in the repo (e.g. `pace-lambda`) when stated.
+- `reference` — ONLY when the document explicitly designates an existing project as a reference
+  implementation / structural template to model on (e.g. a "Reference Implementation" section naming
+  another Lambda). This is the model, NEVER the target.
+- `recommendedStructure` — the folder structure the document PRESCRIBES for the target, when it gives one
+  (a "Folder Structure" / "Project Structure" / "Recommended Structure" section, or a stated directory
+  list such as `setup/`, `properties/`, `utilities/`, `auth/`, `domain/{…}`, `test/`). Record it as a list
+  of relative directory (and notable file) paths, verbatim. This is the authoritative LAYOUT for the
+  target; downstream builds the skeleton from THIS when present, above the reference or the repository.
+This block is the single authority for WHERE the code goes and its SHAPE: the target is THIS `name`, never
+a pre-existing folder discovered in the repository and never the `reference`. If the document does not
+state a target name, leave `name` empty and raise it as a gap — do not guess.
 
 Every other entry carries `source` — the heading or table it came from. Downstream stages cite
 these when they trace a requirement to its origin, and a component with no source cannot be

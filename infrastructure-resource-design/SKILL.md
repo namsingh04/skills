@@ -1,9 +1,9 @@
 ---
 name: "infrastructure-resource-design"
 description: "Turn requirements and the tables that accompany them - IAM policies, VPC and network settings, resource configuration - into a resource specification where every resource, permission and boundary traces to a source row. Use in the specification stage for infrastructure work."
-version: 3
+version: 4
 created: "2026-08-20"
-updated: "2026-09-03"
+updated: "2026-09-05"
 ---
 
 # Infrastructure resource design
@@ -121,13 +121,16 @@ verbatim. Choose them once, per the standards profile's naming rules, and do not
 same resource under two names in different parts of the file — a validator will catch it, but
 only after a retry that could have been avoided.
 
-**Per-environment config follows the STANDARD's schema.** When `00-inputs/Standards-Profile.json`
-is present, the per-environment configuration you specify (`properties/*.properties`,
-`setup/*_setup.json`, or whatever the standard names) must carry the standard's config SCHEMA —
-its exact keys, sections and format — for EVERY environment the reference/skeleton lists, with the
-environment-specific values resolved from the Solution-Model / Standards-Profile / Repo-Profile,
-never hardcoded and never the reference's own values. A config file that invents a flat shape or
-drops the standard's required keys is the defect this exists to prevent.
+**Per-environment config KEYS come by the authority chain solution → standards → repository; VALUES come
+from the solution.** For each per-environment config file (`properties/*.properties`, `setup/*_setup.json`,
+or whatever the target names), the KEY SCHEMA — exact keys, section and format — is taken from the solution
+if it states one, else from `00-inputs/Standards-Profile.json` `configSchema` (the `setup`/`properties` key
+sets surfaced there), else from the reference/skeleton's own config files. Apply that ONE schema to EVERY
+environment the reference/skeleton lists. Fill each key's VALUE from the Solution-Model first, then the
+Standards-Profile; a value no input provides is emitted as a `TODO` placeholder and raised as a gap for the
+human gate (e.g. an unconfirmed callback URL) — never hardcoded, never invented, and never the reference's
+own values. A config file that invents a flat shape or drops the schema's required keys is the defect this
+exists to prevent.
 
 ## Status
 

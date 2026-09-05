@@ -1,9 +1,9 @@
 ---
 name: "repository-discovery"
 description: "Profile an existing repository in any language - layout, module boundaries, naming, test placement, error handling and configuration patterns - with a file path as evidence for every claim. When the solution names a reference project, profile that project completely as the structure to reproduce. Use when analysing the target repository before generating code into it."
-version: 13
+version: 14
 created: "2026-08-20"
-updated: "2026-09-03"
+updated: "2026-09-05"
 ---
 
 # Repository discovery
@@ -113,10 +113,20 @@ inventory was the answer, and it was never recorded.
 **The TARGET project name comes from `00-inputs/Solution-Model.json` `targetProject.name`, NEVER from a
 folder you find in the repository.** Read it first. The `layout` you record is `<sourceRoot>/<targetProject.name>`
 (the doubled `<name>/<name>/` where that is the repo's convention). A repository can contain a folder of
-a DIFFERENT name that a previous run left behind — that folder is an unrelated SIBLING, a candidate to
-model on, but it is NEVER the target. Confusing a stale sibling for the target makes every downstream
-stage build into the wrong folder. If `targetProject.name` is empty, the target is unknown — raise a gap,
-do not adopt a repo folder as the target.
+a DIFFERENT name — a previous run's output, or a project the solution names only as a **reference
+implementation** to model on. **That folder is a SIBLING or a reference, and is NEVER the target**, even
+when it is the only new-looking project on disk: confusing the reference the document says to MODEL ON with
+the target the document says to BUILD makes every downstream stage build into the wrong folder (this is
+exactly the failure where a "Reference Implementation" section's project was adopted as the target). If
+`targetProject.name` is empty, the target is the project the SOLUTION document is ABOUT — its subject, the
+most-mentioned project name in the solution that is not the designated reference — NOT a repo folder and
+NOT `targetProject.reference`; if even that is unclear, raise a gap.
+
+**Authority for the layout is solution → standards → repository.** When the solution states a
+`targetProject.recommendedStructure` (a prescribed folder structure), the target's `layout`/structure comes
+from THAT; where the solution is silent, the standards document's folder-structure rules; only where both
+are silent do you fall back to the repository/reference's shape below. The reference/sibling supplies the
+structural conventions the solution and standards do not specify — never overrides what they do.
 
 When the target is a new project among siblings that share a layout, find the **nearest sibling**
 — the existing project most structurally similar to the one being added (its name is NOT the target's) —

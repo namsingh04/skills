@@ -1,9 +1,9 @@
 ---
 name: "standards-document-comprehension"
 description: "Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page."
-version: 2
+version: 3
 created: "2026-08-20"
-updated: "2026-08-27"
+updated: "2026-09-05"
 ---
 
 # Standards document comprehension
@@ -72,6 +72,10 @@ Write `00-inputs/Standards-Profile.json`. In `payload`:
     }
   ],
   "requiredCommands": [{"purpose": "lint", "command": "", "source": ""}],
+  "configSchema": {
+    "setup":      {"format": "json", "keys": [], "example": {}, "source": ""},
+    "properties": {"format": "ini",  "section": "", "keys": [], "example": "", "source": ""}
+  },
   "notCovered": ["logging format", "retry policy"],
   "ambiguous": [{"statement": "", "why": "", "source": ""}]
 }
@@ -79,6 +83,17 @@ Write `00-inputs/Standards-Profile.json`. In `payload`:
 
 `requiredCommands` matters: a standards document that mandates a lint or a coverage floor is
 naming a validation gate, and the validation stage will run it.
+
+**`configSchema` — surface the per-environment config KEY SCHEMA when the standards document defines
+one.** Standards documents commonly fix the exact shape of the deployment config files a project must
+carry — the `setup/<env>_setup.json` key set (e.g. `name, runtime, role, vpc-config, handler, memory-size,
+timeout, source-arn, environment`, and flags like `shouldProvision`) and the `properties/<env>.properties`
+INI section + key set (e.g. `[config]` with `auth-type, default-region, api-key-secret-name,
+idempotency-table-name`). Record the KEYS, the file format, and the section name exactly as the standard
+states them — **keys and format only, never invented values**. Downstream, the spec stage builds each
+per-env config file with these KEYS and fills VALUES from the solution (authority: solution → standards →
+repository); a value no input provides becomes a `TODO` gap for the human gate. If the standards document
+does not define a config schema, leave `configSchema` empty — do not fabricate one.
 
 ## Where standards sit in the authority chain
 
