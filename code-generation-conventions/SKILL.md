@@ -1,7 +1,7 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 20
+version: 21
 created: "2026-08-20"
 updated: "2026-09-05"
 ---
@@ -155,6 +155,10 @@ must satisfy both.
   config, mock data) — never the reference's values, never a differently-shaped file you invented, and
   never hardcoded.
   The format is the reference's (profiled); the content is the solution's (generated).
+- **A gap the reviewer RESOLVED is authoritative.** When the manager hands you a resolved answer from
+  `30-gaps/Gap-Resolutions.json` (a config value, a queue ARN, a VPC/subnet id, a delivery guarantee),
+  that value is the source of truth for the field it answers — apply it to the code/config and REPLACE any
+  `TODO`/placeholder it resolves. A resolution the reviewer supplied must never be silently ignored.
 
 ## No placeholders
 

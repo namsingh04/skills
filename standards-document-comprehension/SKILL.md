@@ -1,7 +1,7 @@
 ---
 name: "standards-document-comprehension"
 description: "Turn a coding standards document - patterns, code architecture, naming conventions, required checks - into rules a generator can actually obey and a validator can actually check. Use when reading the standards file or page."
-version: 4
+version: 5
 created: "2026-08-20"
 updated: "2026-09-05"
 ---
@@ -90,7 +90,11 @@ must carry — a deployment-descriptor file's key set, and a runtime-properties 
 in whatever format and with whatever keys the standard states. Record, for each config file the standard
 describes, its `format`, its section name(s), and its exact KEY names — transcribed verbatim from the
 standard, **keys and format only, never invented and never a value**. Do not carry over key names from any
-example or another project; take only what THIS standards document lists. Downstream, the spec stage builds
+example or another project; take only what THIS standards document lists. **Put the KEY SET into
+`configSchema` even when the document states it as an interface/type (e.g. a `ReadConfig` field list), a
+"required/optional fields" list, or a naming-conventions section — normalise those into `configSchema`'s
+`keys`; do NOT leave `configSchema` empty while the schema sits only in prose, because downstream then falls
+back to the repository's config, which is the wrong authority.** Downstream, the spec stage builds
 each per-env config file with these KEYS and fills VALUES from the solution (authority: solution → standards
 → repository); a value no input provides becomes a `TODO` gap for the human gate. If the standards document
 does not define a config schema, leave `configSchema` empty — do not fabricate one.
