@@ -1,9 +1,9 @@
 ---
 name: "solution-document-comprehension"
 description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
-version: 4
+version: 5
 created: "2026-08-20"
-updated: "2026-09-05"
+updated: "2026-09-06"
 ---
 
 # Solution document comprehension
@@ -162,11 +162,16 @@ Name" field naming it). Record:
 - `reference` — ONLY when the document explicitly designates an existing project as a reference
   implementation / structural template to model on (e.g. a "Reference Implementation" section naming
   another Lambda). This is the model, NEVER the target.
-- `recommendedStructure` — the folder structure the document PRESCRIBES for the target, when it gives one
-  (a "Folder Structure" / "Project Structure" / "Recommended Structure" section, or a stated directory
-  list such as `setup/`, `properties/`, `utilities/`, `auth/`, `domain/{…}`, `test/`). Record it as a list
-  of relative directory (and notable file) paths, verbatim. This is the authoritative LAYOUT for the
-  target; downstream builds the skeleton from THIS when present, above the reference or the repository.
+- `recommendedStructure` — the folder structure the document PRESCRIBES for the target, when it gives one.
+  **It is most often an explicit directory TREE** — a fenced code block or an indented listing where each
+  package sits on its own line ending in `/` (e.g. `auth/`, `bsp/`, `bsp/infobip/`, `channel_adapter/`,
+  `persistence/`, `utilities/`, `properties/`, `setup/`), files have no trailing slash (`main.py`,
+  `requirements.txt`), and the first line is the target project's own folder. When you see such a tree
+  (a "New Lambda / scope of change" block, a "Folder Structure", "Project Structure" or "Recommended
+  Structure" section), record EVERY directory it lists — including nested ones — as a list of relative
+  directory paths, verbatim; drop the file lines and the tree-root (the target-name) line. Do not paraphrase
+  or invent — copy the tree the document drew. This is the authoritative LAYOUT for the target; downstream
+  builds the skeleton from THIS when present, above the reference or the repository.
 This block is the single authority for WHERE the code goes and its SHAPE: the target is THIS `name`, never
 a pre-existing folder discovered in the repository and never the `reference`. If the document does not
 state a target name, leave `name` empty and raise it as a gap — do not guess.
