@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 22
+version: 23
 created: "2026-08-20"
-updated: "2026-09-07"
+updated: "2026-09-08"
 ---
 
 # Code generation conventions
@@ -125,6 +125,16 @@ skeleton's project-dir name), and do not write some files under the skeleton-nam
 renamed one — that splits
 the project into two half-trees that neither import nor validate. Use the skeleton's exact path for
 every file you write.
+
+**There is ONE code root, and it is `projectSkeleton.codeRoot` — create nothing at a shallower level.**
+The skeleton records `codeRoot`: the single directory that holds the code (the DEEP `<root>/<name>/<name>`
+in the doubled convention). Every code and test file is CREATED at its fileMap path, which already sits under
+that code root — join the repo-relative fileMap path onto the checkout and write it THERE, once. Do NOT
+scaffold a project root of your own, do NOT create a second `main.py`/`utilities/`/package at the MIDDLE
+`<root>/<name>` level, and do NOT create any file the fileMap does not list. The MIDDLE level holds ONLY the
+files the fileMap places there (the reference's middle-level `setup/`, `events/`); everything else lives under
+`codeRoot`. Writing the same module at both levels is the split-tree failure — the fileMap already has the
+correct single path for each file, so follow it and add no extra level.
 
 **Folder structure comes from BOTH sources — take the UNION.** The set of directories and required
 files is the `projectSkeleton` (the reference's exact layout) TOGETHER WITH the `Standards-Profile`'s

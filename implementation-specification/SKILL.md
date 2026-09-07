@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 13
+version: 14
 created: "2026-08-20"
-updated: "2026-09-07"
+updated: "2026-09-08"
 ---
 
 # Implementation specification
@@ -205,9 +205,19 @@ run.
    package. When it is absent, read the division from the solution yourself: one package per component/domain
    the solution describes, named as the solution names it (never a package name copied from the reference or
    invented).
+   **Honour NESTED sub-packages — `projectSkeleton.solutionPackagePaths` gives the FULL package paths** (e.g.
+   `bsp`, `bsp/infobip`, not a flattened top-level `infobip`), each already rooted at `projectSkeleton.codeRoot`.
+   Create those exact nested directories and place each module at its nested path (`bsp/infobip/infobip_adapter.py`),
+   never flattened into the parent — a sub-package the solution draws (`bsp/infobip/`) is a real directory the
+   generated project must have.
+   **Every unit's `targetPath` is UNDER `projectSkeleton.codeRoot`** — the single code root (the deep
+   `<top>/<name>/<name>` in the doubled convention). Do not place a code or test module at a shallower level;
+   only the reference's own middle-level descriptors (`setup/`, `events/`) live above the code root.
    **A reference business/utility module is NOT the project's file: spec it ONLY if a solution module
    actually needs it.** The reference's utility *set* is a naming/API CONVENTION (if the solution needs a
-   shared helper the reference also has, match the reference's name/API for it), never a file list to copy.
+   shared helper the reference also has, match the reference's name/API for it), never a file list to copy —
+   so a reference utility like `dynamo_utils`/`sqs_utils_helper` that no solution module imports must NOT be in
+   the fileMap (it is the reference-as-module-donor defect, and CONV-008 will flag it as dead code).
 
 3. **TEST files — one per code module, in the fileMap, mirroring the src path.** Every business/utility
    unit's paired test file (the unit's `test.targetPath`) is its OWN `create` entry in the fileMap, at
