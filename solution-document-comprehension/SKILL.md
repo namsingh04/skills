@@ -1,7 +1,7 @@
 ---
 name: "solution-document-comprehension"
 description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
-version: 6
+version: 7
 created: "2026-08-20"
 updated: "2026-09-07"
 ---
@@ -104,6 +104,18 @@ metadata of the page already fetched.
 
 So: **no id → retry with `title` and the current page's `metadata.space.key`.** Only when
 *that* fails is it a `MISSING` gap, and then say both things you tried.
+
+## Persist the raw source verbatim, FIRST — before any extraction
+
+The moment you have the document body — the fetched Confluence page, or the uploaded file's text —
+write it VERBATIM to `00-inputs/Solution-Source.md`, before you inventory, structure or interpret
+anything. This is a MECHANICAL copy: the raw body exactly as retrieved, real line breaks, no
+summarising, no reformatting, no fields. A deterministic downstream step reads this file to recover
+the target's folder structure (the "2.2 New Lambda" directory tree) — because the structured
+`Solution-Model.json` you write next routinely loses that tree, while the raw body still contains it.
+So this dump is load-bearing: the structure of every generated project depends on it existing. It is
+the one write that must never be skipped or abridged, and a verbatim copy is far more reliable than
+re-deriving the tree into a field. Write it even when you also populate `recommendedStructure`.
 
 ## Method
 
