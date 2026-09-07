@@ -1,9 +1,9 @@
 ---
 name: "test-generation-and-validation"
 description: "Turn specified contracts and the fixtures extracted from the solution document into runnable tests in the repository's own framework, and interpret what a validation run actually proved. Use by the test authoring and code validation agents."
-version: 6
+version: 7
 created: "2026-08-20"
-updated: "2026-09-01"
+updated: "2026-09-07"
 ---
 
 # Test generation and validation
@@ -19,6 +19,16 @@ catch. If you find yourself running the code to find out what to assert, stop â€
 in the fixture, or it is a gap.
 
 A test that cannot fail is worse than no test.
+
+## Import only the pinned public API, at the pinned path
+
+`20-spec/Implementation-Spec.json` is the single source you and the code agents share. Each unit pins its
+module's exported symbols in `publicApi` and its test file's path in `test.targetPath` (already a fileMap
+entry). Write each test AT that path, and import ONLY the names in that unit's `publicApi`, from the module
+path the fileMap declares. Do not guess a class or function name, and do not import a path the spec did not
+declare â€” that is the `cannot import name` / `ImportError` failure. A symbol you need that no `publicApi`
+lists is a gap, not a name to invent. The assertions still come from the fixtures (above); the API pinning
+only fixes WHAT you import and WHERE the test lives, never what it asserts.
 
 ## Use the repository's framework and layout
 

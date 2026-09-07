@@ -1,9 +1,9 @@
 ---
 name: "implementation-specification"
 description: "Turn a validated requirements model into an implementation specification precise enough to code from - the single bridge between requirements and code, and the firewall that stops business requirements becoming implementation details directly. Use in the specification stage."
-version: 12
+version: 13
 created: "2026-08-20"
-updated: "2026-09-05"
+updated: "2026-09-07"
 ---
 
 # Implementation specification
@@ -41,6 +41,12 @@ For each unit of work:
   "unit": "ingest message validator",
   "targetPath": "<exact repo-relative path per Repo-Profile.json sourceRoots — NOT a greenfield src/>",
   "responsibility": "one sentence, and only one",
+  "publicApi": [
+    {"symbol": "validate_message", "kind": "function",
+     "signature": "validate_message(message: dict) -> ValidatedMessage",
+     "raises": ["SchemaError"]},
+    {"symbol": "ValidatedMessage", "kind": "class", "signature": "ValidatedMessage(id: str, body: dict)"}
+  ],
   "inputs": [{"name": "", "shape": "", "source": "20-spec/Integration.json#/contracts/2"}],
   "outputs": [{"name": "", "shape": ""}],
   "behaviour": [
@@ -52,6 +58,7 @@ For each unit of work:
   "dependencies": ["existing: src/errors.py IngestError"],
   "conventions": ["STD-012 test naming", "repo pattern: error-handling"],
   "satisfies": ["FR-004", "NFR-002"],
+  "test": {"targetPath": "<testDir>/<same package path>/test_<module>.py", "covers": ["validate_message"]},
   "notes": ""
 }
 ```
@@ -68,6 +75,23 @@ it. This citation is what makes the traceability matrix possible.
 
 **`errorBehaviour` is not optional.** A unit specified only for the happy path will be
 implemented only for the happy path.
+
+**`publicApi` pins the module's exported symbols, and the paired `test` puts its test file in the SAME
+fileMap.** These two together are what stops the `cannot import name` / `ImportError` class of failure. Today
+the implementation agent and the test agent each invent the module's public names independently, so a test
+imports `ChannelFormatter` that the implementation never defined. Instead:
+- `publicApi` lists the EXACT symbols the module exports — the function/class names, signatures and the
+  errors they raise — that callers and tests may import. It is a contract: the implementation MUST export
+  exactly these names, and nothing that imports the module may use a name not on this list. Derive the names
+  by the authority chain (the solution's component responsibilities, then the standards' naming rules, then
+  the reference's utility-API names for a shared helper the reference also has) — conventional, never
+  invented. For a shared-utility module this is the same as the profiled `utilityApi` below; state it here so
+  every unit, business modules included, carries its API.
+- `test` names the unit's paired test file and puts it in the fileMap (see below), at
+  `<testDir>/<the unit's package path>/test_<module>.py` — the reference's test-dir name, MIRRORING the src
+  package path. So the test file is a first-class fileMap entry, authored from the same spec unit and the
+  same `publicApi` as the src file. The test imports only symbols in `publicApi`, at a path the fileMap
+  guarantees exists — `cannot import name` and Verify-missing become impossible by construction.
 
 ## Reuse before invention
 
@@ -185,7 +209,15 @@ run.
    actually needs it.** The reference's utility *set* is a naming/API CONVENTION (if the solution needs a
    shared helper the reference also has, match the reference's name/API for it), never a file list to copy.
 
-**Every fileMap entry that is not a structural convention file MUST trace to a solution
+3. **TEST files — one per code module, in the fileMap, mirroring the src path.** Every business/utility
+   unit's paired test file (the unit's `test.targetPath`) is its OWN `create` entry in the fileMap, at
+   `<testDir>/<the module's package path>/test_<module>.py`. The fileMap is therefore the SINGLE source both
+   the code agents and the test agent build from — the test file's path and the module's `publicApi` are
+   declared here, once, so the test cannot import a name or a path the src side did not produce. Do not leave
+   tests to be invented separately from the fileMap; a code module in the fileMap without a paired test entry
+   is an omission.
+
+**Every fileMap entry that is not a structural convention file or a paired test file MUST trace to a solution
 component/requirement.** A module that cites no requirement — a reference utility the solution never uses
 — is stale by construction and must NOT be in the fileMap. This is the same coverage rule as your
 units: no unit (and no file) without a requirement. Do not "copy the reference's complete inventory"; copy

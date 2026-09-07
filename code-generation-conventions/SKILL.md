@@ -1,9 +1,9 @@
 ---
 name: "code-generation-conventions"
 description: "Write code from an implementation spec that reads as though the repository's own team wrote it - in the discovered language, matching discovered patterns, reusing what exists, with no placeholder bodies, and writing every file the fileMap names. Use by every code-writing agent."
-version: 21
+version: 22
 created: "2026-08-20"
-updated: "2026-09-05"
+updated: "2026-09-07"
 ---
 
 # Code generation conventions
@@ -28,6 +28,13 @@ and cite them in the `satisfies` of the files you write; nothing else will.
 it is not yours to infer. A gap in the spec is a gap to report, not a hole to fill with a
 guess about what the business probably wanted — the specification stage exists precisely so
 that those decisions are visible before they become code.
+
+**Export exactly the unit's `publicApi` — no more, no fewer, no renamed.** Each spec unit pins the exact
+symbols (function/class names and signatures) its module exports. Your module MUST define precisely those
+names, spelled identically, so the paired test file (a fileMap entry at the unit's `test.targetPath`) — which
+imports ONLY those names — resolves against your code. Do not rename an exported symbol, do not fold two into
+one, do not add a public symbol the spec did not declare. This shared contract is what makes `cannot import
+name` impossible: the test imports what `publicApi` declares, and you export exactly that.
 
 ## Match the repository, then the language
 

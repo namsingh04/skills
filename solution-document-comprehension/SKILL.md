@@ -1,9 +1,9 @@
 ---
 name: "solution-document-comprehension"
 description: "Read a solution design document - prose, business architecture diagram, mermaid source, mock data, and tables of IAM policies, VPC settings and other configuration - and turn it into one normalized model. Use when ingesting the solution design from Confluence or an uploaded file."
-version: 5
+version: 6
 created: "2026-08-20"
-updated: "2026-09-06"
+updated: "2026-09-07"
 ---
 
 # Solution document comprehension
@@ -175,6 +175,17 @@ Name" field naming it). Record:
 This block is the single authority for WHERE the code goes and its SHAPE: the target is THIS `name`, never
 a pre-existing folder discovered in the repository and never the `reference`. If the document does not
 state a target name, leave `name` empty and raise it as a gap — do not guess.
+
+**Also materialise the structure as a CLEAN copy on disk: `00-inputs/Solution-Structure.md`.** The source
+tree arrives mangled — a Confluence page wraps each directory's slash in a syntax-highlight `<span>`, uses
+non-breaking spaces as separators, and the model serialises newlines multiply-escaped — so a downstream
+deterministic reader cannot recover it, and you are the ONE reader that can (you see through the HTML). So
+after you capture `recommendedStructure`, write the same directory list to `00-inputs/Solution-Structure.md`
+as plain text, ONE clean directory per line ending in `/` (e.g. `auth/`, `bsp/`, `bsp/infobip/`,
+`channel_adapter/`), no HTML, no non-breaking spaces, real newlines — the tree-root and file lines dropped.
+This is the normalise-once-at-the-source rule: every later stage reads this clean copy instead of re-parsing
+the mangled model. Write it even when `recommendedStructure` is also populated; if the document states no
+structure, do not write the file.
 
 Every other entry carries `source` — the heading or table it came from. Downstream stages cite
 these when they trace a requirement to its origin, and a component with no source cannot be
